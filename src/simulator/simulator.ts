@@ -1,6 +1,6 @@
-import { ConfigurationService } from "./configuration";
+import { ConfigurationService } from "../configuration";
 import { SimulatorOptions } from "./types";
-import { WebSocketService } from "./websocket.service";
+import { WebSocketService } from "../websocket/websocket.service";
 
 export abstract class Simulator {
   private readonly wsService = new WebSocketService();

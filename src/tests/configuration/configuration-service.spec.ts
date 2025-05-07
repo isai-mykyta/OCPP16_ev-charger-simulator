@@ -1,4 +1,4 @@
-import { ConfigurationService } from "../../../simulator/configuration";
+import { ConfigurationService } from "../../configuration";
 
 describe("ConfigurationService", () => {
   let configService: ConfigurationService;
