@@ -2,9 +2,10 @@ import WebSocket from "ws";
 
 import { logger } from "../logger";
 
-export class WebSocketClient {
+export class WebSocketService {
   private wsClient: WebSocket;
   private isConnected = false;
+  private pingInterval: NodeJS.Timeout;
 
   private onOpen(): void {
     logger.info("WebSocket connection is opened");
