@@ -1,15 +1,24 @@
 import WebSocket from "ws";
 
 import { logger } from "../logger";
+import { ConnectOptions } from "./types";
 
 export class WebSocketService {
   private wsClient: WebSocket;
   private isConnected = false;
   private pingInterval: NodeJS.Timeout;
+  private webSocketPingInterval: number;
+
+  private startPingInterval(): void {
+    this.pingInterval = setInterval(() => {
+      this.wsClient.ping();
+    }, this.webSocketPingInterval * 1000);
+  }
 
   private onOpen(): void {
     logger.info("WebSocket connection is opened");
     this.isConnected = true;
+    this.startPingInterval();
   }
 
   private onPing(): void {
@@ -33,8 +42,9 @@ export class WebSocketService {
     return this.isConnected;
   }
 
-  public connect(cpmsUrl: string, chargePointIdentity: string): void {
-    this.wsClient = new WebSocket(`${cpmsUrl}/${chargePointIdentity}`, "ocpp1.6");
+  public connect(options: ConnectOptions): void {
+    this.webSocketPingInterval = options.webSocketPingInterval;
+    this.wsClient = new WebSocket(`${options.cpmsUrl}/${options.chargePointIdentity}`, "ocpp1.6");
 
     this.wsClient.on("open", this.onOpen.bind(this));
     this.wsClient.on("ping", this.onPing.bind(this));
@@ -47,5 +57,11 @@ export class WebSocketService {
     this.wsClient.close();
     this.isConnected = false;
     this.wsClient = null;
+    this.webSocketPingInterval = null;
+
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
   }
 }

@@ -3,8 +3,25 @@ import { KeyValue } from "./types";
 export class ConfigurationService {
   private configuration: KeyValue[];
 
+  private readonly requiredKeys = [
+    "WebSocketUrl",
+    "ChargePointIdentity",
+    "WebSocketPingInterval"
+  ];
+
   constructor (configuration: KeyValue[]) {
+    const hasRequiredKeys = this.validateRequiredKeys(configuration);
+
+    if (!hasRequiredKeys) {
+      throw new Error(`Invalid configuration. Configuration must contain ${this.requiredKeys.join(",")} keys`);
+    }
+
     this.configuration = configuration;
+  }
+
+  private validateRequiredKeys(configuration: KeyValue[]): boolean {
+    const configKeys = configuration.map((config) => config.key);
+    return this.requiredKeys.every((key) => configKeys.includes(key));
   }
 
   private changeConfig(key: string, value: string): void {
