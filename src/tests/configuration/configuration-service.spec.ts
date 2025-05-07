@@ -14,6 +14,11 @@ describe("ConfigurationService", () => {
         key: "WebSocketPingInterval",
         value: "60",
         readonly: false
+      },
+      {
+        key: "WebSocketUrl",
+        value: "ws://127.0.0.1:8080",
+        readonly: true
       }
     ]);
   });
@@ -21,7 +26,7 @@ describe("ConfigurationService", () => {
   test("should return configuration", () => {
     const configuration = configService.getConfiguration();
     expect(configuration).toBeDefined();
-    expect(configuration.length).toBeGreaterThan(1);
+    expect(configuration.length).toBe(3);
     expect(Object.keys(configuration[0])).toEqual(
       expect.arrayContaining(["key", "value", "readonly"])
     );

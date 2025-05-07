@@ -21,13 +21,20 @@ describe("WebSocketClient", () => {
 
     wss.once("connection", async (socket) => {
       await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000));
+
       expect(wss.clients.size).toBe(1);
       expect(wsClient.getIsConnected()).toBe(true);
       expect(socket.protocol).toBe("ocpp1.6");
+
+      wsClient.disconnect();
       done();
     });
 
-    wsClient.connect(`ws://127.0.0.1:${wssPort}`, "TEST-SIMULATOR");
+    wsClient.connect({
+      webSocketPingInterval: 60,
+      chargePointIdentity: "TEST-SIMULATOR",
+      cpmsUrl: `ws://127.0.0.1:${wssPort}`
+    });
   });
 
   test("should disconnect from ws server", (done) => {
@@ -43,7 +50,11 @@ describe("WebSocketClient", () => {
       done();
     });
 
-    wsClient.connect(`ws://127.0.0.1:${wssPort}`, "TEST-SIMULATOR");
+    wsClient.connect({
+      webSocketPingInterval: 60,
+      chargePointIdentity: "TEST-SIMULATOR",
+      cpmsUrl: `ws://127.0.0.1:${wssPort}`
+    });
   });
 
   test("should pong", (done) => {
@@ -51,6 +62,7 @@ describe("WebSocketClient", () => {
 
     wss.once("connection", async (socket) => {
       socket.once("pong", () => {
+        wsClient.disconnect();
         done();
       });
 
@@ -58,6 +70,10 @@ describe("WebSocketClient", () => {
       socket.ping();
     });
 
-    wsClient.connect(`ws://127.0.0.1:${wssPort}`, "TEST-SIMULATOR");
+    wsClient.connect({
+      webSocketPingInterval: 60,
+      chargePointIdentity: "TEST-SIMULATOR",
+      cpmsUrl: `ws://127.0.0.1:${wssPort}`
+    });
   });
 });
