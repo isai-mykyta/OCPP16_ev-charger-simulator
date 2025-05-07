@@ -1,8 +1,9 @@
 import { configuration } from "./config";
 import { Simulator } from "../../simulator";
+import { SimulatorOptions } from "../../types";
 
 export class BaseSimulatorModel extends Simulator {
-  constructor () {
-    super({ configs: configuration });
+  constructor (options: Pick<SimulatorOptions, "chargePointIdentity" | "webSocketUrl">) {
+    super({ ...options, configs: configuration });
   }
 }
