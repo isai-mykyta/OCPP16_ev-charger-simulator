@@ -1,6 +1,6 @@
 import { WebSocketServer } from "ws";
 
-import { WebSocketClient } from "../../simulator/websocket";
+import { WebSocketService } from "../../simulator/websocket.service";
 
 describe("WebSocketClient", () => {
   const wssPort = 8081;
@@ -17,7 +17,7 @@ describe("WebSocketClient", () => {
   });
 
   test("should connect to ws server", (done) => {
-    const wsClient = new WebSocketClient();
+    const wsClient = new WebSocketService();
 
     wss.once("connection", async (socket) => {
       await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000));
@@ -31,7 +31,7 @@ describe("WebSocketClient", () => {
   });
 
   test("should disconnect from ws server", (done) => {
-    const wsClient = new WebSocketClient();
+    const wsClient = new WebSocketService();
 
     wss.once("connection", async () => {
       await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000));
@@ -47,7 +47,7 @@ describe("WebSocketClient", () => {
   });
 
   test("should pong", (done) => {
-    const wsClient = new WebSocketClient();
+    const wsClient = new WebSocketService();
 
     wss.once("connection", async (socket) => {
       socket.once("pong", () => {

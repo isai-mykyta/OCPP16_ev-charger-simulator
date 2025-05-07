@@ -1,4 +1,4 @@
-export const defaultConfiguration = [
+export const configuration = [
   /**
    * If this key exists, the Charge Point supports Unknown Offline Authorization. 
    * If this key reports a value of true, Unknown Offline Authorization is enabled.
