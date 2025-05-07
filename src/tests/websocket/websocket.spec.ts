@@ -1,6 +1,6 @@
 import { WebSocketServer } from "ws";
 
-import { WebSocketService } from "../../simulator/websocket.service";
+import { WebSocketService } from "../../websocket/websocket.service";
 
 describe("WebSocketClient", () => {
   const wssPort = 8081;
