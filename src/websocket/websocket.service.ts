@@ -3,12 +3,14 @@ import WebSocket from "ws";
 import { logger } from "../logger";
 import { ConnectOptions } from "./types";
 import { eventsService } from "../events/events.service";
+import { OcppService, OcppMessage } from "../ocpp";
 
 export class WebSocketService {
   private wsClient: WebSocket;
   private pingInterval: NodeJS.Timeout;
   private webSocketPingInterval: number;
   private chargePointIdentity: string;
+  private ocppService: OcppService;
 
   private startPingInterval(): void {
     this.pingInterval = setInterval(() => {
@@ -20,6 +22,7 @@ export class WebSocketService {
     this.wsClient = null;
     this.webSocketPingInterval = null;
     this.chargePointIdentity = null;
+    this.ocppService = null;
 
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
@@ -47,14 +50,35 @@ export class WebSocketService {
     logger.error("WS error occured", { error });
   }
 
+  private send(message: string): void {
+    this.wsClient.send(message);
+  }
+
   private onMessage(data: WebSocket.RawData): void {
     const message = data.toString();
     logger.info("WebSocket message received", { message });
+
+    let parsedMessage: OcppMessage<unknown>;
+
+    try {
+      parsedMessage = JSON.parse(message);
+    } catch (error) {
+      logger.error("Failed to parse incoming WS message");
+    }
+
+    const response = this.ocppService.handleMessage(parsedMessage);
+
+    if (response) {
+      this.send(JSON.stringify(response));
+      return;
+    }
   }
 
   public connect(options: ConnectOptions): void {
     this.webSocketPingInterval = options.webSocketPingInterval;
     this.chargePointIdentity = options.chargePointIdentity;
+
+    this.ocppService = new OcppService({ identity: this.chargePointIdentity });
     this.wsClient = new WebSocket(`${options.cpmsUrl}/${options.chargePointIdentity}`, "ocpp1.6");
 
     this.wsClient.on("open", this.onOpen.bind(this));

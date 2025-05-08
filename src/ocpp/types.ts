@@ -10,6 +10,8 @@ export enum OcppMessageAction {
   BOOT_NOTIFICATION = "BootNotification",
   GET_CONFIGURATION = "GetConfiguration",
   CHANGE_CONFIGURATION = "ChangeConfiguration",
+  REMOTE_STOP_TRANSACTION = "RemoteStopTransaction",
+  REMOTE_START_TRANSACTION = "RemoteStartTransaction"
 }
 
 export enum OcppErrorCode {
@@ -83,4 +85,8 @@ export type ChangeConfigurationReq = {
 
 export type ChangeConfigurationConf = {
   status: ConfigurationStatus;
+}
+
+export type OcppServiceOptions = {
+  identity: string;
 }
