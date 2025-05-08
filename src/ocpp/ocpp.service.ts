@@ -18,7 +18,7 @@ export class OcppService {
     return [OcppMessageType.RESULT, messageId, payload];
   }
 
-  public callErrorMessage(messageId: string, errorCode: OcppErrorCode, description: string = "", details: Record<string, unknown> = {}): CallErrorMessage {
+  private callErrorMessage(messageId: string, errorCode: OcppErrorCode, description: string = "", details: Record<string, unknown> = {}): CallErrorMessage {
     return [OcppMessageType.ERROR, messageId, errorCode, description, JSON.stringify(details)];
   }
 }

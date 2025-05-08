@@ -2,12 +2,13 @@ import WebSocket from "ws";
 
 import { logger } from "../logger";
 import { ConnectOptions } from "./types";
+import { eventsService } from "../events/events.service";
 
 export class WebSocketService {
   private wsClient: WebSocket;
-  private isConnected = false;
   private pingInterval: NodeJS.Timeout;
   private webSocketPingInterval: number;
+  private chargePointIdentity: string;
 
   private startPingInterval(): void {
     this.pingInterval = setInterval(() => {
@@ -15,10 +16,21 @@ export class WebSocketService {
     }, this.webSocketPingInterval * 1000);
   }
 
+  private clear(): void {
+    this.wsClient = null;
+    this.webSocketPingInterval = null;
+    this.chargePointIdentity = null;
+
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
+  }
+
   private onOpen(): void {
     logger.info("WebSocket connection is opened");
-    this.isConnected = true;
     this.startPingInterval();
+    eventsService.emit("simulatorConnected", { identity: this.chargePointIdentity });
   }
 
   private onPing(): void {
@@ -27,6 +39,8 @@ export class WebSocketService {
 
   private onClose(): void {
     logger.warn("WebSocket connection is closed");
+    eventsService.emit("simulatorDisconnected", { identity: this.chargePointIdentity });
+    this.clear();
   } 
 
   private onError(error: Error): void {
@@ -38,12 +52,9 @@ export class WebSocketService {
     logger.info("WebSocket message received", { message });
   }
 
-  public getIsConnected(): boolean {
-    return this.isConnected;
-  }
-
   public connect(options: ConnectOptions): void {
     this.webSocketPingInterval = options.webSocketPingInterval;
+    this.chargePointIdentity = options.chargePointIdentity;
     this.wsClient = new WebSocket(`${options.cpmsUrl}/${options.chargePointIdentity}`, "ocpp1.6");
 
     this.wsClient.on("open", this.onOpen.bind(this));
@@ -55,13 +66,7 @@ export class WebSocketService {
 
   public disconnect(): void {
     this.wsClient.close();
-    this.isConnected = false;
-    this.wsClient = null;
-    this.webSocketPingInterval = null;
-
-    if (this.pingInterval) {
-      clearInterval(this.pingInterval);
-      this.pingInterval = null;
-    }
+    eventsService.emit("simulatorDisconnected", { identity: this.chargePointIdentity });
+    this.clear();
   }
 }

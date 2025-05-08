@@ -1,10 +1,12 @@
 import { ConfigurationService } from "../configuration";
 import { SimulatorOptions } from "./types";
+import { eventsService } from "../events/events.service";
 import { WebSocketService } from "../websocket/websocket.service";
 
 export abstract class Simulator {
-  private readonly webSocketUrl: string;
-  private readonly chargePointIdentity: string;
+  public readonly webSocketUrl: string;
+  public readonly chargePointIdentity: string;
+  
   private readonly wsService: WebSocketService;
   private readonly configService: ConfigurationService;
 
@@ -14,6 +16,11 @@ export abstract class Simulator {
 
     this.wsService = new WebSocketService();
     this.configService = new ConfigurationService(options.configs);
+
+    eventsService.emit("simulatorCreated", { 
+      identity: this.chargePointIdentity, 
+      cpmsUrl: this.webSocketUrl 
+    });
   }
 
   public start(): void {
