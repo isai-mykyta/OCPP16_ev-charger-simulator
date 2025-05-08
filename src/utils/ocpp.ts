@@ -1,4 +1,13 @@
-import { OcppErrorCode } from "../ocpp";
+import { randomUUID } from "node:crypto";
+
+import { 
+  CallErrorMessage,
+  CallMessage, 
+  CallResultMessage, 
+  OcppErrorCode, 
+  OcppMessageAction, 
+  OcppMessageType 
+} from "../ocpp";
 
 export const mapErrorConstraintToErrorCode = (constraint: string): OcppErrorCode => {
   switch (constraint) {
@@ -28,4 +37,16 @@ export const mapErrorConstraintToErrorCode = (constraint: string): OcppErrorCode
   default:
     return OcppErrorCode.GENERIC_ERROR;
   }
+};
+
+export const callMessage = <P>(action: OcppMessageAction, payload: P): CallMessage<P> => {
+  return [OcppMessageType.CALL, randomUUID(), action, payload];
+};
+
+export const callResultMessage = <P>(messageId: string, payload: P): CallResultMessage<P> => {
+  return [OcppMessageType.RESULT, messageId, payload];
+};
+
+export const callErrorMessage = (messageId: string, errorCode: OcppErrorCode, description: string = "", details: Record<string, unknown> = {}): CallErrorMessage => {
+  return [OcppMessageType.ERROR, messageId, errorCode, description, JSON.stringify(details)];
 };
