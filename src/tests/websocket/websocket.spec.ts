@@ -1,5 +1,6 @@
 import { WebSocketServer } from "ws";
 
+import { eventsService } from "../../events/events.service";
 import { WebSocketService } from "../../websocket/websocket.service";
 
 describe("WebSocketClient", () => {
@@ -19,12 +20,15 @@ describe("WebSocketClient", () => {
   test("should connect to ws server", (done) => {
     const wsClient = new WebSocketService();
 
+    const eventHandler = jest.fn();
+    eventsService.on("simulatorConnected", eventHandler);
+
     wss.once("connection", async (socket) => {
       await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000));
 
       expect(wss.clients.size).toBe(1);
-      expect(wsClient.getIsConnected()).toBe(true);
       expect(socket.protocol).toBe("ocpp1.6");
+      expect(eventHandler).toHaveBeenCalledWith({ identity: "TEST-SIMULATOR" });
 
       wsClient.disconnect();
       done();
@@ -40,13 +44,17 @@ describe("WebSocketClient", () => {
   test("should disconnect from ws server", (done) => {
     const wsClient = new WebSocketService();
 
+    const eventHandler = jest.fn();
+    eventsService.on("simulatorDisconnected", eventHandler);
+
     wss.once("connection", async () => {
       await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000));
       wsClient.disconnect();
 
       await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000));
       expect(wss.clients.size).toBe(0);
-      expect(wsClient.getIsConnected()).toBe(false);
+      expect(eventHandler).toHaveBeenCalledWith({ identity: "TEST-SIMULATOR" });
+
       done();
     });
 

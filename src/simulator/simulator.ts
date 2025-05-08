@@ -1,24 +1,33 @@
 import { ConfigurationService } from "../configuration";
 import { SimulatorOptions } from "./types";
+import { eventsService } from "../events/events.service";
 import { WebSocketService } from "../websocket/websocket.service";
 
 export abstract class Simulator {
-  private readonly wsService = new WebSocketService();
+  public readonly webSocketUrl: string;
+  public readonly chargePointIdentity: string;
+  
+  private readonly wsService: WebSocketService;
   private readonly configService: ConfigurationService;
 
   constructor (options: SimulatorOptions) {
+    this.webSocketUrl = options.webSocketUrl;
+    this.chargePointIdentity = options.chargePointIdentity;
+
+    this.wsService = new WebSocketService();
     this.configService = new ConfigurationService(options.configs);
+
+    eventsService.emit("simulatorCreated", { 
+      identity: this.chargePointIdentity, 
+      cpmsUrl: this.webSocketUrl 
+    });
   }
 
   public start(): void {
-    const cpmsUrl = this.configService.findConfigByKey("WebSocketUrl").value;
-    const chargePointIdentity = this.configService.findConfigByKey("ChargePointIdentity").value;
-    const webSocketPingInterval = Number(this.configService.findConfigByKey("WebSocketPingInterval").value);
-
     this.wsService.connect({
-      cpmsUrl,
-      chargePointIdentity,
-      webSocketPingInterval
+      cpmsUrl: this.webSocketUrl,
+      chargePointIdentity: this.chargePointIdentity,
+      webSocketPingInterval: Number(this.configService.findConfigByKey("WebSocketPingInterval").value)
     });
   }
 
