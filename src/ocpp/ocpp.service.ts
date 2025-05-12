@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 import { 
   CallErrorMessage, 
   CallMessage, 
@@ -11,9 +9,12 @@ import {
   OcppServiceOptions,
   RegistrationStatus
 } from "./types";
+import { eventsService } from "../events/events.service";
 import { logger } from "../logger";
-import { simulatorsRegistry } from "../registry";
+import { ocppRegistry } from "../ocpp-registry";
+import { simulatorsRegistry } from "../simulator-registry";
 import { OcppValidator } from "./ocpp.validator";
+import { callErrorMessage } from "../utils";
 
 export class OcppService {
   private readonly identity: string;
@@ -21,18 +22,6 @@ export class OcppService {
 
   constructor (options: OcppServiceOptions) {
     this.identity = options.identity;
-  }
-
-  private callMessage<P>(action: OcppMessageAction, payload: P): CallMessage<P> {
-    return [OcppMessageType.CALL, randomUUID(), action, payload];
-  }
-
-  private callResultMessage<P>(messageId: string, payload: P): CallResultMessage<P> {
-    return [OcppMessageType.RESULT, messageId, payload];
-  }
-
-  private callErrorMessage(messageId: string, errorCode: OcppErrorCode, description: string = "", details: Record<string, unknown> = {}): CallErrorMessage {
-    return [OcppMessageType.ERROR, messageId, errorCode, description, JSON.stringify(details)];
   }
 
   private handleCallMessage(message: CallMessage<unknown>): CallResultMessage<unknown> | CallErrorMessage | undefined {
@@ -52,29 +41,49 @@ export class OcppService {
       return;
     }
 
-    if (simulatorState.registrationStatus === RegistrationStatus.REJECTED) {
-      logger.error("While Rejected, the Charge Point SHALL NOT respond to any Central System initiated message");
-      return;
-    }
-
     const { isValid, errorCode } = this.ocppValidator.validateOcppRequestPayload(action, payload);
 
     if (!isValid) {
-      const errorMessage = this.callErrorMessage(messageId, errorCode);
+      const errorMessage = callErrorMessage(messageId, errorCode);
       logger.error("Error during validation of OCPP call message payload", { errorMessage });
       return errorMessage;
     }
 
     switch (action) {
     default:
-      const errorMessage = this.callErrorMessage(messageId, OcppErrorCode.NOT_IMPLEMENTED);
+      const errorMessage = callErrorMessage(messageId, OcppErrorCode.NOT_IMPLEMENTED);
       logger.error("Not supported OCPP message ", { message });
       return errorMessage;
     }
   }
 
-  private handleCallResultMessage(message: CallResultMessage<unknown>): void {}
-  private handleCallErrorMessage(message: CallErrorMessage): void {}
+  private handleCallResultMessage(message: CallResultMessage<unknown>): void {
+    const [, messageId, payload] = message;
+    const pendingRequest = ocppRegistry.getMessage(messageId);
+
+    if (!pendingRequest) {
+      logger.error("Failed to find pending request for received message", { message });
+      return;
+    }
+
+    const [,, action] = pendingRequest;
+    eventsService.emit("ocppResponseReceived", { message });
+    const isResponsePayloadValid = this.ocppValidator.validateOcppResponsePayload(action, payload);
+
+    if (!isResponsePayloadValid) {
+      logger.error("Recieved invlid OCPP response message", { message });
+      return;
+    }
+
+    switch (action) {
+    default:
+      break;
+    }
+  }
+
+  private handleCallErrorMessage(message: CallErrorMessage): void {
+    logger.error("Call error message received", { message });
+  }
 
   public handleMessage(message: OcppMessage<unknown>): CallResultMessage<unknown> | CallErrorMessage | undefined {
     const [messageType] = message;

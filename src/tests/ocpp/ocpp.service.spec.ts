@@ -1,12 +1,14 @@
+import { eventsService } from "../../events/events.service";
 import { logger } from "../../logger";
 import { 
   CallMessage, 
+  OcppErrorCode, 
   OcppMessage, 
   OcppMessageAction, 
   OcppService, 
   RegistrationStatus 
 } from "../../ocpp";
-import { simulatorsRegistry, SimulatorState } from "../../registry";
+import { simulatorsRegistry, SimulatorState } from "../../simulator-registry";
 
 describe("OCPP service", () => {
   const identity = "TEST.OCPP.SERVICE";
@@ -32,8 +34,15 @@ describe("OCPP service", () => {
     expect(logger.error).toHaveBeenCalledTimes(1);
   });
 
+  test("should not handle invalid OCPP call message", () => {
+    const invalidOcppCallMessage = [2, "id", OcppMessageAction.HEARTBEAT, {}, {}] as unknown as OcppMessage<unknown>;
+    jest.spyOn(logger, "error");
+    ocppService.handleMessage(invalidOcppCallMessage);
+    expect(logger.error).toHaveBeenCalledTimes(1);
+  });
+
   test("should not handle OCPP message when registration status is rejected", () => {
-    simulatorsRegistry.addSimulator(new SimulatorState({ 
+    simulatorsRegistry["addSimulator"](new SimulatorState({ 
       identity, 
       registrationStatus: RegistrationStatus.REJECTED 
     }));
@@ -45,9 +54,9 @@ describe("OCPP service", () => {
   });
 
   test("should not allow transaction requests while CS being rejected by Central System", () => {
-    simulatorsRegistry.addSimulator(new SimulatorState({ 
+    simulatorsRegistry["addSimulator"](new SimulatorState({ 
       identity, 
-      registrationStatus: RegistrationStatus.REJECTED 
+      registrationStatus: RegistrationStatus.PENDING 
     }));
 
     const startTransactionReq = [2, "id", OcppMessageAction.REMOTE_START_TRANSACTION, {}] as CallMessage<object>;
@@ -59,5 +68,23 @@ describe("OCPP service", () => {
     ocppService.handleMessage(stopTransactionReq);
     
     expect(logger.error).toHaveBeenCalledTimes(2);
+  });
+
+  test("should return OCPP error message if OCPP request payload is invalid", () => {
+    const invalidOcppCallMessage = [2, "id", OcppMessageAction.BOOT_NOTIFICATION, {}] as OcppMessage<unknown>;
+    const ocppError = ocppService.handleMessage(invalidOcppCallMessage);
+
+    expect(ocppError[0]).toBe(4);
+    expect(ocppError[1]).toBe("id");
+    expect(ocppError.length).toBe(5);
+  });
+
+  test("should return NOT_IMPLEMENTED exception if request action is uknown", () => {
+    const callMessage = [2, "id", "UknownAction" as OcppMessageAction, {}] as OcppMessage<unknown>;
+    const ocppError = ocppService.handleMessage(callMessage);
+
+    expect(ocppError[0]).toBe(4);
+    expect(ocppError[1]).toBe("id");
+    expect(ocppError[2]).toStrictEqual(OcppErrorCode.NOT_IMPLEMENTED);
   });
 });
