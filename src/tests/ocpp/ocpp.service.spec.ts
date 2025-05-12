@@ -1,3 +1,4 @@
+import { eventsService } from "../../events/events.service";
 import { logger } from "../../logger";
 import { 
   CallMessage, 
@@ -41,7 +42,7 @@ describe("OCPP service", () => {
   });
 
   test("should not handle OCPP message when registration status is rejected", () => {
-    simulatorsRegistry.addSimulator(new SimulatorState({ 
+    simulatorsRegistry["addSimulator"](new SimulatorState({ 
       identity, 
       registrationStatus: RegistrationStatus.REJECTED 
     }));
@@ -53,7 +54,7 @@ describe("OCPP service", () => {
   });
 
   test("should not allow transaction requests while CS being rejected by Central System", () => {
-    simulatorsRegistry.addSimulator(new SimulatorState({ 
+    simulatorsRegistry["addSimulator"](new SimulatorState({ 
       identity, 
       registrationStatus: RegistrationStatus.PENDING 
     }));

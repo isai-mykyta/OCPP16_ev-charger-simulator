@@ -21,12 +21,8 @@ class SimulatorsRegistry {
     });
   }
 
-  public addSimulator(state: SimulatorState): void {
+  private addSimulator(state: SimulatorState): void {
     this.simulators.set(state.identity, state);
-  }
-
-  public removeSimulator(identity: string): void {
-    this.simulators.delete(identity);
   }
 
   public getSimulator(identity: string): SimulatorState {
