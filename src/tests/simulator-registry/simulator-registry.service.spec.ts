@@ -1,5 +1,5 @@
 import { eventsService } from "../../events/events.service";
-import { simulatorsRegistry, SimulatorState } from "../../registry";
+import { simulatorsRegistry, SimulatorState } from "../../simulator-registry";
 
 describe("SimulatorsRegistry", () => {
   afterEach(() => {

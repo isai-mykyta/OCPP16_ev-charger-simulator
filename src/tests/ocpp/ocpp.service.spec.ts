@@ -1,12 +1,13 @@
 import { logger } from "../../logger";
 import { 
   CallMessage, 
+  OcppErrorCode, 
   OcppMessage, 
   OcppMessageAction, 
   OcppService, 
   RegistrationStatus 
 } from "../../ocpp";
-import { simulatorsRegistry, SimulatorState } from "../../registry";
+import { simulatorsRegistry, SimulatorState } from "../../simulator-registry";
 
 describe("OCPP service", () => {
   const identity = "TEST.OCPP.SERVICE";
@@ -75,5 +76,14 @@ describe("OCPP service", () => {
     expect(ocppError[0]).toBe(4);
     expect(ocppError[1]).toBe("id");
     expect(ocppError.length).toBe(5);
+  });
+
+  test("should return NOT_IMPLEMENTED exception if request action is uknown", () => {
+    const callMessage = [2, "id", "UknownAction" as OcppMessageAction, {}] as OcppMessage<unknown>;
+    const ocppError = ocppService.handleMessage(callMessage);
+
+    expect(ocppError[0]).toBe(4);
+    expect(ocppError[1]).toBe("id");
+    expect(ocppError[2]).toStrictEqual(OcppErrorCode.NOT_IMPLEMENTED);
   });
 });

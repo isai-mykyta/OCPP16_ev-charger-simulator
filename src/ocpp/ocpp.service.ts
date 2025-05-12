@@ -10,16 +10,26 @@ import {
   RegistrationStatus
 } from "./types";
 import { logger } from "../logger";
-import { simulatorsRegistry } from "../registry";
+import { simulatorsRegistry } from "../simulator-registry";
 import { OcppValidator } from "./ocpp.validator";
 import { callErrorMessage } from "../utils";
 
 export class OcppService {
   private readonly identity: string;
   private readonly ocppValidator = new OcppValidator();
+  private pendingMessages = new Map<string, CallMessage<unknown>>();
 
   constructor (options: OcppServiceOptions) {
     this.identity = options.identity;
+  }
+
+  private cleanPendingRequest(messageId: string): void {
+    this.pendingMessages.delete(messageId);
+  }
+
+  private storePendingRequest(message: CallMessage<unknown>): void {
+    const [, messageId] = message;
+    this.pendingMessages.set(messageId, message);
   }
 
   private handleCallMessage(message: CallMessage<unknown>): CallResultMessage<unknown> | CallErrorMessage | undefined {
@@ -55,8 +65,33 @@ export class OcppService {
     }
   }
 
-  private handleCallResultMessage(message: CallResultMessage<unknown>): void {}
-  private handleCallErrorMessage(message: CallErrorMessage): void {}
+  private handleCallResultMessage(message: CallResultMessage<unknown>): void {
+    const [, messageId, payload] = message;
+    const pendingRequest = this.pendingMessages.get(messageId);
+
+    if (!pendingRequest) {
+      logger.error("Failed to find pending request for received message", { message });
+      return;
+    }
+
+    const [,, action] = pendingRequest;
+    this.cleanPendingRequest(messageId);
+    const isResponsePayloadValid = this.ocppValidator.validateOcppResponsePayload(action, payload);
+
+    if (!isResponsePayloadValid) {
+      logger.error("Recieved invlid OCPP response message", { message });
+      return;
+    }
+
+    switch (action) {
+    default:
+      break;
+    }
+  }
+
+  private handleCallErrorMessage(message: CallErrorMessage): void {
+    logger.error("Call error message received", { message });
+  }
 
   public handleMessage(message: OcppMessage<unknown>): CallResultMessage<unknown> | CallErrorMessage | undefined {
     const [messageType] = message;
