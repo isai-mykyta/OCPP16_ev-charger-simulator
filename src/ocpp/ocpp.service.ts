@@ -12,16 +12,16 @@ import {
 import { eventsService } from "../events/events.service";
 import { logger } from "../logger";
 import { ocppRegistry } from "../ocpp-registry";
-import { simulatorsRegistry } from "../simulator-registry";
+import { simulatorsRegistry, SimulatorState } from "../simulator-registry";
 import { OcppValidator } from "./ocpp.validator";
 import { callErrorMessage } from "../utils";
 
 export class OcppService {
-  private readonly identity: string;
   private readonly ocppValidator = new OcppValidator();
+  private readonly simulator: SimulatorState;
 
   constructor (options: OcppServiceOptions) {
-    this.identity = options.identity;
+    this.simulator = simulatorsRegistry.getSimulator(options.identity);
   }
 
   private handleCallMessage(message: CallMessage<unknown>): CallResultMessage<unknown> | CallErrorMessage | undefined {
@@ -34,7 +34,7 @@ export class OcppService {
 
     const [, messageId, action, payload] = message;
     const isTransactionRequest = [OcppMessageAction.REMOTE_STOP_TRANSACTION, OcppMessageAction.REMOTE_START_TRANSACTION].includes(action);
-    const simulatorState = simulatorsRegistry.getSimulator(this.identity);
+    const simulatorState = simulatorsRegistry.getSimulator(this.simulator.identity);
 
     if (isTransactionRequest && simulatorState.registrationStatus === RegistrationStatus.PENDING) {
       logger.error("Can not proceed transaction request while CS being rejected by Central System");
@@ -88,7 +88,7 @@ export class OcppService {
   public handleMessage(message: OcppMessage<unknown>): CallResultMessage<unknown> | CallErrorMessage | undefined {
     const [messageType] = message;
     const isValidOcppMessage = Array.isArray(message) && [2, 3, 4].includes(messageType);
-    const simulatorState = simulatorsRegistry.getSimulator(this.identity);
+    const simulatorState = simulatorsRegistry.getSimulator(this.simulator.identity);
 
     if (!isValidOcppMessage) {
       logger.error("Invalid OCPP message received", { message });
