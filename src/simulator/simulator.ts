@@ -19,7 +19,8 @@ export abstract class Simulator {
 
     eventsService.emit("simulatorCreated", { 
       identity: this.chargePointIdentity, 
-      cpmsUrl: this.webSocketUrl 
+      cpmsUrl: this.webSocketUrl,
+      configuration: this.configService
     });
   }
 
