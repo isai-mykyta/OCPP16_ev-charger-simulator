@@ -12,7 +12,6 @@ import { simulatorsRegistry } from "../../registry";
 import { TestSimulator } from "../fixtures";
 
 describe("OCPP service", () => {
-  const identity = "TEST.OCPP.SERVICE";
   let ocppService: OcppService;
   let testSimulator: TestSimulator;
 
@@ -56,14 +55,17 @@ describe("OCPP service", () => {
   });
 
   test("should not handle OCPP message when registration status is rejected", () => {
+    jest.useFakeTimers();
     testSimulator.registrationStatus = RegistrationStatus.REJECTED;
     const ocppMessage = [2, "id", OcppMessageAction.HEARTBEAT, {}] as CallMessage<object>;
     jest.spyOn(logger, "error");
     ocppService.handleMessage(ocppMessage);
     expect(logger.error).toHaveBeenCalledTimes(1);
+    jest.useRealTimers();
   });
 
   test("should not allow transaction requests while CS being rejected by Central System", () => {
+    jest.useFakeTimers();
     testSimulator.registrationStatus = RegistrationStatus.PENDING;
     const startTransactionReq = [2, "id", OcppMessageAction.REMOTE_START_TRANSACTION, {}] as CallMessage<object>;
     const stopTransactionReq = [2, "id", OcppMessageAction.REMOTE_STOP_TRANSACTION, {}] as CallMessage<object>;
@@ -74,15 +76,18 @@ describe("OCPP service", () => {
     ocppService.handleMessage(stopTransactionReq);
     
     expect(logger.error).toHaveBeenCalledTimes(2);
+    jest.useRealTimers();
   });
 
   test("should return OCPP error message if OCPP request payload is invalid", () => {
+    jest.useFakeTimers();
     const invalidOcppCallMessage = [2, "id", OcppMessageAction.BOOT_NOTIFICATION, {}] as OcppMessage<unknown>;
     const ocppError = ocppService.handleMessage(invalidOcppCallMessage);
 
     expect(ocppError[0]).toBe(4);
     expect(ocppError[1]).toBe("id");
     expect(ocppError.length).toBe(5);
+    jest.useRealTimers();
   });
 
   test("should return NOT_IMPLEMENTED exception if request action is uknown", () => {

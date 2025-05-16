@@ -1,3 +1,4 @@
 export type Events = {
-  triggerBootNotification: { identity: string }
+  triggerBootNotification: { identity: string },
+  triggerHeartbeat: { identity: string }
 }

@@ -1,4 +1,5 @@
 import { SimulatorOptions } from "./types";
+import { eventsService } from "../events";
 import { CallMessage, KeyValue, RegistrationStatus } from "../ocpp";
 import { WebSocketService } from "../websocket/websocket.service";
 
@@ -11,7 +12,10 @@ export abstract class Simulator {
 
   private _isOnline: boolean;
   private _registrationStatus: RegistrationStatus;
-
+  private _heartbeatInterval: number;
+  
+  private heartbeatTimer: NodeJS.Timeout;
+  
   private readonly pendingRequests = new Map<string, CallMessage<unknown>>();
   private readonly wsService: WebSocketService;
 
@@ -21,7 +25,9 @@ export abstract class Simulator {
     this.model = options.model;
     this.vendor = options.vendor;
     this.configuration = options.configuration;
+
     this._isOnline = false;
+    this._heartbeatInterval = 60;
 
     this.wsService = new WebSocketService();
   }
@@ -36,6 +42,12 @@ export abstract class Simulator {
 
   public stop(): void {
     this.wsService.disconnect();
+    this.registrationStatus = null;
+
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
   }
 
   public storePendingRequest(request: CallMessage<unknown>): void {
@@ -56,6 +68,16 @@ export abstract class Simulator {
 
   public set registrationStatus(status: RegistrationStatus) {
     this._registrationStatus = status;
+
+    if (status === RegistrationStatus.REJECTED) {
+      setTimeout(() => {
+        eventsService.emit("triggerBootNotification", { identity: this.identity });
+      }, this.heartbeatInterval * 1000);
+    } else if (status === RegistrationStatus.ACCEPTED) {
+      this.heartbeatTimer = setInterval(() => {
+        eventsService.emit("triggerHeartbeat", { identity: this.identity });
+      }, this.heartbeatInterval * 1000);
+    }
   }
 
   public get registrationStatus(): RegistrationStatus {
@@ -68,5 +90,17 @@ export abstract class Simulator {
 
   public get isOnline(): boolean {
     return this._isOnline;
+  }
+
+  public set heartbeatInterval(value: number) {
+    if (value < 10) return;
+    this._heartbeatInterval = value;
+
+    const configKey = this.configuration.find((config) => config.key === "HeartbeatInterval");
+    if (configKey) configKey.value = value.toString();
+  }
+
+  public get heartbeatInterval(): number {
+    return this._heartbeatInterval;
   }
 }
