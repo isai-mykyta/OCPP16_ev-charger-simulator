@@ -12,7 +12,6 @@ export abstract class Simulator {
 
   private _isOnline: boolean;
   private _registrationStatus: RegistrationStatus;
-  private _heartbeatInterval: number;
   
   private heartbeatTimer: NodeJS.Timeout;
   
@@ -27,7 +26,6 @@ export abstract class Simulator {
     this.configuration = options.configuration;
 
     this._isOnline = false;
-    this._heartbeatInterval = 60;
 
     this.wsService = new WebSocketService();
   }
@@ -94,13 +92,21 @@ export abstract class Simulator {
 
   public set heartbeatInterval(value: number) {
     if (value < 10) return;
-    this._heartbeatInterval = value;
 
     const configKey = this.configuration.find((config) => config.key === "HeartbeatInterval");
-    if (configKey) configKey.value = value.toString();
+
+    if (configKey) {
+      configKey.value = value.toString();
+    } else {
+      this.configuration.push({ 
+        key: "HeartbeatInterval", 
+        value: value.toString(), 
+        readonly: false 
+      });
+    }
   }
 
   public get heartbeatInterval(): number {
-    return this._heartbeatInterval;
+    return Number(this.configuration.find((config) => config.key === "HeartbeatInterval")?.value || 120);
   }
 }

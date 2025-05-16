@@ -1,7 +1,10 @@
 import { Simulator } from "../../simulator";
 import { GetConfigurationConf, GetConfigurationReq } from "../types";
 
-export const handleGetConfigurationRequest = (simulator: Simulator, request: GetConfigurationReq): GetConfigurationConf => {
+export const handleGetConfigurationRequest = (
+  simulator: Simulator, 
+  request: GetConfigurationReq
+): GetConfigurationConf => {
   const configKeysLimit = Number(simulator.configuration.find((config) => config.key === "GetConfigurationMaxKeys")?.value || 1000);
 
   if (!request.key) {
