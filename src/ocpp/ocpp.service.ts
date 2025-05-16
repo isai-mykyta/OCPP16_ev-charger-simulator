@@ -6,23 +6,21 @@ import {
   OcppErrorCode, 
   OcppMessage, 
   OcppMessageAction, 
-  OcppMessageType, 
-  OcppServiceOptions,
+  OcppMessageType,
   RegistrationStatus
 } from "./types";
-import { eventsService } from "../events/events.service";
 import { logger } from "../logger";
-import { ocppRegistry } from "../ocpp-registry";
-import { simulatorsRegistry, SimulatorState } from "../simulator-registry";
+import { simulatorsRegistry } from "../registry";
 import { OcppValidator } from "./ocpp.validator";
+import { Simulator } from "../simulator";
 import { callErrorMessage, callMessage } from "../utils";
 
 export class OcppService {
   private readonly ocppValidator = new OcppValidator();
-  private readonly simulator: SimulatorState;
+  private readonly simulator: Simulator;
 
-  constructor (options: OcppServiceOptions) {
-    this.simulator = simulatorsRegistry.getSimulator(options.identity);
+  constructor (identity: string) {
+    this.simulator = simulatorsRegistry.getSimulator(identity);
   }
 
   private handleCallMessage(message: CallMessage<unknown>): CallResultMessage<unknown> | CallErrorMessage | undefined {
@@ -35,9 +33,8 @@ export class OcppService {
 
     const [, messageId, action, payload] = message;
     const isTransactionRequest = [OcppMessageAction.REMOTE_STOP_TRANSACTION, OcppMessageAction.REMOTE_START_TRANSACTION].includes(action);
-    const simulatorState = simulatorsRegistry.getSimulator(this.simulator.identity);
 
-    if (isTransactionRequest && simulatorState.registrationStatus === RegistrationStatus.PENDING) {
+    if (isTransactionRequest && this.simulator.registrationStatus === RegistrationStatus.PENDING) {
       logger.error("Can not proceed transaction request while CS being rejected by Central System");
       return;
     }
@@ -60,7 +57,7 @@ export class OcppService {
 
   private handleCallResultMessage(message: CallResultMessage<unknown>): void {
     const [, messageId, payload] = message;
-    const pendingRequest = ocppRegistry.getMessage(messageId);
+    const pendingRequest = this.simulator.getPendingRequest(messageId);
 
     if (!pendingRequest) {
       logger.error("Failed to find pending request for received message", { message });
@@ -68,7 +65,7 @@ export class OcppService {
     }
 
     const [,, action] = pendingRequest;
-    eventsService.emit("ocppResponseReceived", { message });
+    this.simulator.clearPendingRequest(messageId);
     const isResponsePayloadValid = this.ocppValidator.validateOcppResponsePayload(action, payload);
 
     if (!isResponsePayloadValid) {
@@ -117,13 +114,13 @@ export class OcppService {
   }
 
   public bootNotificationReq(): CallMessage<BootNotificationReq> {
-    const imsi = this.simulator.configuration.findConfigByKey("imsi");
-    const iccid = this.simulator.configuration.findConfigByKey("iccid");
-    const meterType = this.simulator.configuration.findConfigByKey("meterType");
-    const firmwareVersion = this.simulator.configuration.findConfigByKey("firmwareVersion");
-    const chargePointSerialNumber = this.simulator.configuration.findConfigByKey("chargePointSerialNumber");
-    const meterSerialNumber = this.simulator.configuration.findConfigByKey("meterSerialNumber");
-    const chargeBoxSerialNumber = this.simulator.configuration.findConfigByKey("chargeBoxSerialNumber");
+    const imsi = this.simulator.configuration.find((v) => v.key === "imsi");
+    const iccid = this.simulator.configuration.find((v) => v.key === "iccid");
+    const meterType = this.simulator.configuration.find((v) => v.key === "meterType");
+    const firmwareVersion = this.simulator.configuration.find((v) => v.key === "firmwareVersion");
+    const chargePointSerialNumber = this.simulator.configuration.find((v) => v.key === "chargePointSerialNumber");
+    const meterSerialNumber = this.simulator.configuration.find((v) => v.key === "meterSerialNumber");
+    const chargeBoxSerialNumber = this.simulator.configuration.find((v) => v.key === "chargeBoxSerialNumber");
 
     const payload: BootNotificationReq = {
       chargePointModel: this.simulator.model,

@@ -86,7 +86,3 @@ export type ChangeConfigurationReq = {
 export type ChangeConfigurationConf = {
   status: ConfigurationStatus;
 }
-
-export type OcppServiceOptions = {
-  identity: string;
-}

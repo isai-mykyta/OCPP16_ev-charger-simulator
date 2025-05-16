@@ -1,7 +1,7 @@
-import { KeyValue } from "../configuration";
+import { KeyValue } from "../ocpp";
 
 export type SimulatorOptions = {
-  configs: KeyValue[];
+  configuration: KeyValue[];
   webSocketUrl: string;
   chargePointIdentity: string;
   model: string;
