@@ -1,21 +1,16 @@
 import WebSocket from "ws";
 
-import { eventsService } from "../events/events.service";
 import { logger } from "../logger";
 import { OcppService, OcppMessage } from "../ocpp";
-import { simulatorsRegistry, SimulatorState } from "../simulator-registry";
+import { ConnectOptions } from "./types";
+import { simulatorsRegistry } from "../registry";
 
 export class WebSocketService {
   private wsClient: WebSocket;
   private pingInterval: NodeJS.Timeout;
   private webSocketPingInterval: number;
   private ocppService: OcppService;
-
-  private readonly simulator: SimulatorState;
-
-  constructor (identity: string) {
-    this.simulator = simulatorsRegistry.getSimulator(identity);
-  }
+  private identity: string;
 
   private startPingInterval(): void {
     this.pingInterval = setInterval(() => {
@@ -27,6 +22,7 @@ export class WebSocketService {
     this.wsClient = null;
     this.webSocketPingInterval = null;
     this.ocppService = null;
+    this.identity = null;
 
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
@@ -35,12 +31,11 @@ export class WebSocketService {
   }
 
   private onOpen(): void {
-    const identity = this.simulator.configuration.findConfigByKey("ChargePointIdentity").value;
-    logger.info("WebSocket connection is opened");
-    
-    this.startPingInterval();
-    eventsService.emit("simulatorConnected", { identity });
+    const simulator = simulatorsRegistry.getSimulator(this.identity);
+    if (simulator) simulator.isOnline = true;
 
+    logger.info("WebSocket connection is opened");
+    this.startPingInterval();
     const bootRequest = this.ocppService.bootNotificationReq();
     this.sendRequest(JSON.stringify(bootRequest));
   }
@@ -50,9 +45,10 @@ export class WebSocketService {
   }
 
   private onClose(): void {
-    const identity = this.simulator.configuration.findConfigByKey("ChargePointIdentity").value;
+    const simulator = simulatorsRegistry.getSimulator(this.identity);
+    if (simulator) simulator.isOnline = false;
+
     logger.warn("WebSocket connection is closed");
-    eventsService.emit("simulatorDisconnected", { identity });
     this.clear();
   } 
 
@@ -65,8 +61,9 @@ export class WebSocketService {
   }
 
   private sendRequest(message: string): void {
+    const simulator = simulatorsRegistry.getSimulator(this.identity);
     this.send(message);
-    eventsService.emit("ocppResponseReceived", { message: JSON.parse(message) });
+    simulator.storePendingRequest(JSON.parse(message));
   }
 
   private onMessage(data: WebSocket.RawData): void {
@@ -89,13 +86,12 @@ export class WebSocketService {
     }
   }
 
-  public connect(): void {
-    this.webSocketPingInterval = Number(this.simulator.configuration.findConfigByKey("WebSocketPingInterval")?.value) || 60;
-    const identity = this.simulator.configuration.findConfigByKey("ChargePointIdentity").value;
-    const cpmsUrl = this.simulator.configuration.findConfigByKey("WebSocketUrl").value;
+  public connect(options: ConnectOptions): void {
+    this.webSocketPingInterval = options.webSocketPingInterval;
+    this.identity = options.identity;
 
-    this.ocppService = new OcppService({ identity });
-    this.wsClient = new WebSocket(`${cpmsUrl}/${identity}`, "ocpp1.6");
+    this.ocppService = new OcppService(this.identity);
+    this.wsClient = new WebSocket(`${options.webSocketUrl}/${this.identity}`, "ocpp1.6");
 
     this.wsClient.on("open", this.onOpen.bind(this));
     this.wsClient.on("ping", this.onPing.bind(this));
@@ -105,9 +101,10 @@ export class WebSocketService {
   }
 
   public disconnect(): void {
-    const identity = this.simulator.configuration.findConfigByKey("ChargePointIdentity").value;
+    const simulator = simulatorsRegistry.getSimulator(this.identity);
+    if (simulator) simulator.isOnline = false;
+
     this.wsClient.close();
-    eventsService.emit("simulatorDisconnected", { identity });
     this.clear();
   }
 }

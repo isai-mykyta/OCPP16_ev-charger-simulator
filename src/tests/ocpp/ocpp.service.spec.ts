@@ -1,4 +1,3 @@
-import { ConfigurationService } from "../../configuration";
 import { logger } from "../../logger";
 import { 
   CallMessage, 
@@ -9,41 +8,25 @@ import {
   OcppService, 
   RegistrationStatus 
 } from "../../ocpp";
-import { simulatorsRegistry, SimulatorState } from "../../simulator-registry";
+import { simulatorsRegistry } from "../../registry";
+import { TestSimulator } from "../fixtures";
 
 describe("OCPP service", () => {
   const identity = "TEST.OCPP.SERVICE";
   let ocppService: OcppService;
+  let testSimulator: TestSimulator;
 
   beforeEach(() => {
-    const configuration = [
-      {
-        key: "WebSocketUrl",
-        readonly: true,
-        value: "ws://127.0.0.1:8080"
-      },
-      {
-        key: "ChargePointIdentity",
-        readonly: true,
-        value: identity
-      },
-      {
-        key: "WebSocketPingInterval",
-        readonly: true,
-        value: "60"
-      },
-    ];
-
-    const state = new SimulatorState({
-      identity,
-      cpmsUrl: "ws://127.0.0.1:8080",
-      configuration: new ConfigurationService(configuration),
+    testSimulator = new TestSimulator({
+      chargePointIdentity: "TEST.SIMULATOR",
+      configuration: [],
       model: "test-model",
-      vendor: "test-vendor"
+      vendor: "test-vendor",
+      webSocketUrl: `ws://127.0.0.1:8081`
     });
 
-    simulatorsRegistry.addSimulator(state);
-    ocppService = new OcppService({ identity });
+    simulatorsRegistry.addSimulator(testSimulator);
+    ocppService = new OcppService(testSimulator.identity);
   });
 
   afterEach(() => {
@@ -73,11 +56,7 @@ describe("OCPP service", () => {
   });
 
   test("should not handle OCPP message when registration status is rejected", () => {
-    simulatorsRegistry["addSimulator"](new SimulatorState({ 
-      identity, 
-      registrationStatus: RegistrationStatus.REJECTED 
-    }));
-
+    testSimulator.registrationStatus = RegistrationStatus.REJECTED;
     const ocppMessage = [2, "id", OcppMessageAction.HEARTBEAT, {}] as CallMessage<object>;
     jest.spyOn(logger, "error");
     ocppService.handleMessage(ocppMessage);
@@ -85,11 +64,7 @@ describe("OCPP service", () => {
   });
 
   test("should not allow transaction requests while CS being rejected by Central System", () => {
-    simulatorsRegistry["addSimulator"](new SimulatorState({ 
-      identity, 
-      registrationStatus: RegistrationStatus.PENDING 
-    }));
-
+    testSimulator.registrationStatus = RegistrationStatus.PENDING;
     const startTransactionReq = [2, "id", OcppMessageAction.REMOTE_START_TRANSACTION, {}] as CallMessage<object>;
     const stopTransactionReq = [2, "id", OcppMessageAction.REMOTE_STOP_TRANSACTION, {}] as CallMessage<object>;
 
