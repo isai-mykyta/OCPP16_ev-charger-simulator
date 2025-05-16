@@ -7,7 +7,8 @@ import {
 import { 
   BootNotificationConfSchema, 
   ChangeConfigurationReqSchema, 
-  GetConfigurationReqSchema 
+  GetConfigurationReqSchema, 
+  HeartbeatConfSchema
 } from "./schemas";
 import { 
   OcppErrorCode, 
@@ -19,6 +20,7 @@ import {
 export class OcppValidator {
   private readonly ocppResponsesValidators = {
     [OcppMessageAction.BOOT_NOTIFICATION]: BootNotificationConfSchema,
+    [OcppMessageAction.HEARTBEAT]: HeartbeatConfSchema,
   };
   
   private readonly ocppRequestsValidators = {

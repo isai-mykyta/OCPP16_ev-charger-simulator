@@ -3,6 +3,7 @@ import WebSocket from "ws";
 import { logger } from "../logger";
 import { OcppService, OcppMessage } from "../ocpp";
 import { ConnectOptions } from "./types";
+import { eventsService } from "../events";
 import { simulatorsRegistry } from "../registry";
 
 export class WebSocketService {
@@ -11,6 +12,22 @@ export class WebSocketService {
   private webSocketPingInterval: number;
   private ocppService: OcppService;
   private identity: string;
+
+  constructor () {
+    eventsService.on("triggerBootNotification", ({ identity }) => {
+      if (identity === this.identity) {
+        const bootRequest = this.ocppService.bootNotificationReq();
+        this.sendRequest(JSON.stringify(bootRequest));
+      }
+    });
+
+    eventsService.on("triggerHeartbeat", ({ identity }) => {
+      if (identity === this.identity) {
+        const heartbeatRequest = this.ocppService.hearbeatReq();
+        this.sendRequest(JSON.stringify(heartbeatRequest));
+      }
+    });
+  }
 
   private startPingInterval(): void {
     this.pingInterval = setInterval(() => {
@@ -36,8 +53,7 @@ export class WebSocketService {
 
     logger.info("WebSocket connection is opened");
     this.startPingInterval();
-    const bootRequest = this.ocppService.bootNotificationReq();
-    this.sendRequest(JSON.stringify(bootRequest));
+    eventsService.emit("triggerBootNotification", { identity: this.identity });
   }
 
   private onPing(): void {
@@ -104,7 +120,7 @@ export class WebSocketService {
     const simulator = simulatorsRegistry.getSimulator(this.identity);
     if (simulator) simulator.isOnline = false;
 
-    this.wsClient.close();
+    this.wsClient?.close();
     this.clear();
   }
 }

@@ -1,5 +1,6 @@
 import { WebSocketServer } from "ws";
 
+import { RegistrationStatus } from "../../ocpp";
 import { simulatorsRegistry } from "../../registry";
 import { WebSocketService } from "../../websocket/websocket.service";
 import { TestSimulator } from "../fixtures";
@@ -113,5 +114,35 @@ describe("WebSocketClient", () => {
       webSocketUrl: `ws://127.0.0.1:${wssPort}`,
       identity: "TEST.SIMULATOR"
     });
+  });
+
+  test("should handle accepted Boot Notification response", async () => {
+    const wsClient = new WebSocketService();
+  
+    const promise = new Promise<void>((resolve) => {
+      wss.once("connection", (socket) => {
+        socket.on("message", async (data) => {
+          const [, msgId, action] = JSON.parse(data.toString());
+  
+          if (action === "BootNotification") {
+            const payload = { interval: 120, status: RegistrationStatus.PENDING };
+            socket.send(JSON.stringify([3, msgId, payload]));
+            await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000));
+
+            expect(testSimulator.registrationStatus).toBe(payload.status);
+            expect(testSimulator.heartbeatInterval).toBe(payload.interval);
+            resolve();
+          }
+        });
+      });
+    });
+  
+    wsClient.connect({
+      webSocketPingInterval: 60,
+      webSocketUrl: `ws://127.0.0.1:${wssPort}`,
+      identity: "TEST.SIMULATOR"
+    });
+  
+    await promise;
   });
 });

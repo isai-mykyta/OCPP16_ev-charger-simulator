@@ -1,4 +1,5 @@
 import { 
+  BootNotificationConf,
   BootNotificationReq,
   CallErrorMessage, 
   CallMessage, 
@@ -14,6 +15,7 @@ import { simulatorsRegistry } from "../registry";
 import { OcppValidator } from "./ocpp.validator";
 import { Simulator } from "../simulator";
 import { callErrorMessage, callMessage } from "../utils";
+import { handleBootNotificationResponse } from "./handlers";
 
 export class OcppService {
   private readonly ocppValidator = new OcppValidator();
@@ -74,6 +76,11 @@ export class OcppService {
     }
 
     switch (action) {
+    case OcppMessageAction.BOOT_NOTIFICATION:
+      handleBootNotificationResponse(this.simulator, payload as BootNotificationConf);
+      break;
+    case OcppMessageAction.HEARTBEAT:
+      break;
     default:
       break;
     }
@@ -111,6 +118,10 @@ export class OcppService {
     default:
       break;
     }
+  }
+
+  public hearbeatReq(): CallMessage<object> {
+    return callMessage(OcppMessageAction.HEARTBEAT, {});
   }
 
   public bootNotificationReq(): CallMessage<BootNotificationReq> {
