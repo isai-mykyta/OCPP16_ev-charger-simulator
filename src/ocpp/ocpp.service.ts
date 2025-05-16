@@ -1,4 +1,5 @@
 import { 
+  BootNotificationReq,
   CallErrorMessage, 
   CallMessage, 
   CallResultMessage, 
@@ -14,7 +15,7 @@ import { logger } from "../logger";
 import { ocppRegistry } from "../ocpp-registry";
 import { simulatorsRegistry, SimulatorState } from "../simulator-registry";
 import { OcppValidator } from "./ocpp.validator";
-import { callErrorMessage } from "../utils";
+import { callErrorMessage, callMessage } from "../utils";
 
 export class OcppService {
   private readonly ocppValidator = new OcppValidator();
@@ -113,5 +114,29 @@ export class OcppService {
     default:
       break;
     }
+  }
+
+  public bootNotificationReq(): CallMessage<BootNotificationReq> {
+    const imsi = this.simulator.configuration.findConfigByKey("imsi");
+    const iccid = this.simulator.configuration.findConfigByKey("iccid");
+    const meterType = this.simulator.configuration.findConfigByKey("meterType");
+    const firmwareVersion = this.simulator.configuration.findConfigByKey("firmwareVersion");
+    const chargePointSerialNumber = this.simulator.configuration.findConfigByKey("chargePointSerialNumber");
+    const meterSerialNumber = this.simulator.configuration.findConfigByKey("meterSerialNumber");
+    const chargeBoxSerialNumber = this.simulator.configuration.findConfigByKey("chargeBoxSerialNumber");
+
+    const payload: BootNotificationReq = {
+      chargePointModel: this.simulator.model,
+      chargePointVendor: this.simulator.vendor,
+      ...(imsi && { imsi: imsi.value }),
+      ...(iccid && { iccid: iccid.value }),
+      ...(meterType && { meterType: meterType.value }),
+      ...(firmwareVersion && { firmwareVersion: firmwareVersion.value }),
+      ...(chargePointSerialNumber && { chargePointSerialNumber: chargePointSerialNumber.value }),
+      ...(meterSerialNumber && { meterSerialNumber: meterSerialNumber.value }),
+      ...(chargeBoxSerialNumber && { chargeBoxSerialNumber: chargeBoxSerialNumber.value }),
+    };
+
+    return callMessage(OcppMessageAction.BOOT_NOTIFICATION, payload);
   }
 }

@@ -21,7 +21,7 @@ class SimulatorsRegistry {
     });
   }
 
-  private addSimulator(state: SimulatorState): void {
+  public addSimulator(state: SimulatorState): void {
     this.simulators.set(state.identity, state);
   }
 

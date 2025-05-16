@@ -1,10 +1,11 @@
-import { eventsService } from "../../events/events.service";
+import { ConfigurationService } from "../../configuration";
 import { logger } from "../../logger";
 import { 
   CallMessage, 
   OcppErrorCode, 
   OcppMessage, 
   OcppMessageAction, 
+  OcppMessageType, 
   OcppService, 
   RegistrationStatus 
 } from "../../ocpp";
@@ -15,7 +16,37 @@ describe("OCPP service", () => {
   let ocppService: OcppService;
 
   beforeEach(() => {
+    const configuration = [
+      {
+        key: "WebSocketUrl",
+        readonly: true,
+        value: "ws://127.0.0.1:8080"
+      },
+      {
+        key: "ChargePointIdentity",
+        readonly: true,
+        value: identity
+      },
+      {
+        key: "WebSocketPingInterval",
+        readonly: true,
+        value: "60"
+      },
+    ];
+
+    const state = new SimulatorState({
+      identity,
+      cpmsUrl: "ws://127.0.0.1:8080",
+      configuration: new ConfigurationService(configuration),
+      model: "test-model",
+      vendor: "test-vendor"
+    });
+
+    simulatorsRegistry.addSimulator(state);
     ocppService = new OcppService({ identity });
+  });
+
+  afterEach(() => {
     jest.resetAllMocks();
     simulatorsRegistry.clear();
   });
@@ -86,5 +117,13 @@ describe("OCPP service", () => {
     expect(ocppError[0]).toBe(4);
     expect(ocppError[1]).toBe("id");
     expect(ocppError[2]).toStrictEqual(OcppErrorCode.NOT_IMPLEMENTED);
+  });
+
+  test("should constrcut boot notification request", () => {
+    const request = ocppService.bootNotificationReq();
+    expect(request[0]).toBe(OcppMessageType.CALL);
+    expect(typeof request[1]).toBe("string");
+    expect(request[2]).toBe(OcppMessageAction.BOOT_NOTIFICATION);
+    expect(request[3]).toBeDefined();
   });
 });
