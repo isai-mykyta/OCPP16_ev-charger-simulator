@@ -20,6 +20,13 @@ export class WebSocketService {
         this.sendRequest(JSON.stringify(bootRequest));
       }
     });
+
+    eventsService.on("triggerHeartbeat", ({ identity }) => {
+      if (identity === this.identity) {
+        const heartbeatRequest = this.ocppService.hearbeatReq();
+        this.sendRequest(JSON.stringify(heartbeatRequest));
+      }
+    });
   }
 
   private startPingInterval(): void {

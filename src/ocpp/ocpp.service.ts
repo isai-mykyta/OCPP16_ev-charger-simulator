@@ -79,6 +79,8 @@ export class OcppService {
     case OcppMessageAction.BOOT_NOTIFICATION:
       handleBootNotificationResponse(this.simulator, payload as BootNotificationConf);
       break;
+    case OcppMessageAction.HEARTBEAT:
+      break;
     default:
       break;
     }
@@ -116,6 +118,10 @@ export class OcppService {
     default:
       break;
     }
+  }
+
+  public hearbeatReq(): CallMessage<object> {
+    return callMessage(OcppMessageAction.HEARTBEAT, {});
   }
 
   public bootNotificationReq(): CallMessage<BootNotificationReq> {
