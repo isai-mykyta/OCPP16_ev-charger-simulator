@@ -7,6 +7,8 @@ export type StateOptions = {
   cpmsUrl?: string;
   registrationStatus?: RegistrationStatus;
   configuration?: ConfigurationService;
+  model?: string;
+  vendor?: string;
 }
 
 export class SimulatorState {
@@ -15,6 +17,8 @@ export class SimulatorState {
   public cpmsUrl: string;
   public registrationStatus: RegistrationStatus;
   public configuration: ConfigurationService;
+  public model: string;
+  public vendor: string;
 
   constructor (options: StateOptions) {
     this.identity = options.identity;
@@ -22,5 +26,7 @@ export class SimulatorState {
     this.cpmsUrl = options.cpmsUrl || "";
     this.registrationStatus = options.registrationStatus || null;
     this.configuration = options.configuration || null;
+    this.model = options.model;
+    this.vendor = options.vendor;
   }
 }

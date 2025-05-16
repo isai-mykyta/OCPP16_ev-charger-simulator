@@ -5,6 +5,8 @@ export type SimulatorCreatedPayload = {
   identity: string;
   cpmsUrl: string;
   configuration: ConfigurationService;
+  model: string;
+  vendor: string;
 }
 
 export type Events = {
