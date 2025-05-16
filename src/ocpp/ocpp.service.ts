@@ -4,6 +4,7 @@ import {
   CallErrorMessage, 
   CallMessage, 
   CallResultMessage, 
+  ChangeConfigurationReq, 
   OcppErrorCode, 
   OcppMessage, 
   OcppMessageAction, 
@@ -14,9 +15,14 @@ import { logger } from "../logger";
 import { simulatorsRegistry } from "../registry";
 import { OcppValidator } from "./ocpp.validator";
 import { Simulator } from "../simulator";
-import { callErrorMessage, callMessage, callResultMessage } from "../utils";
+import { 
+  callErrorMessage, 
+  callMessage, 
+  callResultMessage 
+} from "../utils";
 import { 
   handleBootNotificationResponse,
+  handleChangeConfigurationRequest,
   handleGetConfigurationRequest
 } from "./handlers";
 
@@ -53,9 +59,14 @@ export class OcppService {
     }
 
     switch (action) {
-    case OcppMessageAction.GET_CONFIGURATION:
+    case OcppMessageAction.GET_CONFIGURATION: {
       const responsePayload = handleGetConfigurationRequest(this.simulator, payload);
       return callResultMessage(messageId, responsePayload);
+    }
+    case OcppMessageAction.CHANGE_CONFIGURATION: {
+      const responsePayload = handleChangeConfigurationRequest(this.simulator, payload as ChangeConfigurationReq);
+      return callResultMessage(messageId, responsePayload);
+    }
     default:
       const errorMessage = callErrorMessage(messageId, OcppErrorCode.NOT_IMPLEMENTED);
       logger.error("Not supported OCPP message ", { message });
