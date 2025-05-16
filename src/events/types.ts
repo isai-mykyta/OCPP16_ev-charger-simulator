@@ -1,8 +1,12 @@
+import { ConfigurationService } from "../configuration";
 import { CallMessage, CallResultMessage } from "../ocpp";
 
 export type SimulatorCreatedPayload = {
   identity: string;
   cpmsUrl: string;
+  configuration: ConfigurationService;
+  model: string;
+  vendor: string;
 }
 
 export type Events = {

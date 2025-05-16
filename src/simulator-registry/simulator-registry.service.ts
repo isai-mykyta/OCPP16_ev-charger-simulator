@@ -5,8 +5,8 @@ class SimulatorsRegistry {
   private readonly simulators = new Map<string, SimulatorState>();
 
   constructor () {
-    eventsService.on("simulatorCreated", ({ identity, cpmsUrl }) => {
-      const state = new SimulatorState({ identity, cpmsUrl });
+    eventsService.on("simulatorCreated", (options) => {
+      const state = new SimulatorState(options);
       this.addSimulator(state);
     });
 
@@ -21,7 +21,7 @@ class SimulatorsRegistry {
     });
   }
 
-  private addSimulator(state: SimulatorState): void {
+  public addSimulator(state: SimulatorState): void {
     this.simulators.set(state.identity, state);
   }
 
