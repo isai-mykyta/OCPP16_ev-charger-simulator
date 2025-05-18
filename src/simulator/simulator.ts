@@ -1,4 +1,5 @@
 import { SimulatorOptions } from "./types";
+import { Connector } from "../connector";
 import { eventsService } from "../events";
 import { CallMessage, KeyValue, RegistrationStatus } from "../ocpp";
 import { WebSocketService } from "../websocket/websocket.service";
@@ -16,6 +17,7 @@ export abstract class Simulator {
   private heartbeatTimer: NodeJS.Timeout;
   
   private readonly pendingRequests = new Map<string, CallMessage<unknown>>();
+  private readonly connectors = new Map<number, Connector>();
   private readonly wsService: WebSocketService;
 
   constructor (options: SimulatorOptions) {
@@ -28,6 +30,13 @@ export abstract class Simulator {
     this._isOnline = false;
 
     this.wsService = new WebSocketService();
+
+    options.connectors.forEach((connector, idx) => {
+      this.connectors.set(idx + 1, new Connector({
+        id: idx + 1,
+        type: connector.type,
+      }));
+    });
   }
 
   private handleRejectedRegistrationStatus(): void {

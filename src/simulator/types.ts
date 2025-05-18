@@ -1,3 +1,4 @@
+import { ConnectorType } from "../connector";
 import { KeyValue } from "../ocpp";
 
 export type SimulatorOptions = {
@@ -6,4 +7,5 @@ export type SimulatorOptions = {
   chargePointIdentity: string;
   model: string;
   vendor: string;
+  connectors: { type: ConnectorType }[];
 }
