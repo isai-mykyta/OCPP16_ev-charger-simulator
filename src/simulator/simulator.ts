@@ -30,6 +30,23 @@ export abstract class Simulator {
     this.wsService = new WebSocketService();
   }
 
+  private handleRejectedRegistrationStatus(): void {
+    setTimeout(() => {
+      eventsService.emit("triggerBootNotification", { identity: this.identity });
+    }, this.heartbeatInterval * 1000);
+  }
+
+  private handleAcceptedRegistrationStatus(): void {
+    this.heartbeatTimer = setInterval(() => {
+      eventsService.emit("triggerHeartbeat", { identity: this.identity });
+    }, this.heartbeatInterval * 1000);
+  }
+
+  private setConfigKey(key: string, value: string, readonly: boolean): void {
+    const configKey = this.configuration.find((config) => config.key === key);
+    configKey ? configKey.value = value : this.configuration.push({ key, readonly, value });
+  }
+
   public start(): void {
     this.wsService.connect({
       identity: this.identity,
@@ -67,14 +84,15 @@ export abstract class Simulator {
   public set registrationStatus(status: RegistrationStatus) {
     this._registrationStatus = status;
 
-    if (status === RegistrationStatus.REJECTED) {
-      setTimeout(() => {
-        eventsService.emit("triggerBootNotification", { identity: this.identity });
-      }, this.heartbeatInterval * 1000);
-    } else if (status === RegistrationStatus.ACCEPTED) {
-      this.heartbeatTimer = setInterval(() => {
-        eventsService.emit("triggerHeartbeat", { identity: this.identity });
-      }, this.heartbeatInterval * 1000);
+    switch (status) {
+    case RegistrationStatus.REJECTED:
+      this.handleRejectedRegistrationStatus();
+      break;
+    case RegistrationStatus.ACCEPTED:
+      this.handleAcceptedRegistrationStatus();
+      break;
+    default:
+      break;
     }
   }
 
@@ -92,18 +110,7 @@ export abstract class Simulator {
 
   public set heartbeatInterval(value: number) {
     if (value < 10) return;
-
-    const configKey = this.configuration.find((config) => config.key === "HeartbeatInterval");
-
-    if (configKey) {
-      configKey.value = value.toString();
-    } else {
-      this.configuration.push({ 
-        key: "HeartbeatInterval", 
-        value: value.toString(), 
-        readonly: false 
-      });
-    }
+    this.setConfigKey("HeartbeatInterval", value.toString(), false);
   }
 
   public get heartbeatInterval(): number {
@@ -116,17 +123,6 @@ export abstract class Simulator {
 
   public set webSocketPingInterval(value: number) {
     if (value < 10) return;
-
-    const configKey = this.configuration.find((config) => config.key === "WebSocketPingInterval");
-
-    if (configKey) {
-      configKey.value = value.toString();
-    } else {
-      this.configuration.push({ 
-        key: "WebSocketPingInterval", 
-        value: value.toString(), 
-        readonly: false 
-      });
-    }
+    this.setConfigKey("WebSocketPingInterval", value.toString(), false);
   }
 }
