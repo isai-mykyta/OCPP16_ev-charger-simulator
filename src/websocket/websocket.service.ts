@@ -14,22 +14,24 @@ export class WebSocketService {
   private identity: string;
 
   constructor () {
+    const simulator = simulatorsRegistry.getSimulator(this.identity);
+
     eventsService.on("triggerBootNotification", ({ identity }) => {
-      if (identity === this.identity) {
+      if (identity === this.identity && simulator.isOnline) {
         const bootRequest = this.ocppService.bootNotificationReq();
         this.sendRequest(JSON.stringify(bootRequest));
       }
     });
 
     eventsService.on("triggerHeartbeat", ({ identity }) => {
-      if (identity === this.identity) {
+      if (identity === this.identity && simulator.isOnline) {
         const heartbeatRequest = this.ocppService.hearbeatReq();
         this.sendRequest(JSON.stringify(heartbeatRequest));
       }
     });
 
     eventsService.on("triggerStatusNotification", ({ identity, payload }) => {
-      if (identity === this.identity) {
+      if (identity === this.identity && simulator.isOnline) {
         const statusNotificationRequest = this.ocppService.statusNotificationReq(payload);
         this.sendRequest(JSON.stringify(statusNotificationRequest));
       }
