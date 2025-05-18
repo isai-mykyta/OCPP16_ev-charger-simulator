@@ -27,6 +27,13 @@ export class WebSocketService {
         this.sendRequest(JSON.stringify(heartbeatRequest));
       }
     });
+
+    eventsService.on("triggerStatusNotification", ({ identity, payload }) => {
+      if (identity === this.identity) {
+        const statusNotificationRequest = this.ocppService.statusNotificationReq(payload);
+        this.sendRequest(JSON.stringify(statusNotificationRequest));
+      }
+    });
   }
 
   private startPingInterval(): void {

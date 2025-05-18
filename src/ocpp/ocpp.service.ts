@@ -9,7 +9,8 @@ import {
   OcppMessage, 
   OcppMessageAction, 
   OcppMessageType,
-  RegistrationStatus
+  RegistrationStatus,
+  StatusNotificationReq
 } from "./types";
 import { logger } from "../logger";
 import { simulatorsRegistry } from "../registry";
@@ -85,9 +86,9 @@ export class OcppService {
 
     const [,, action] = pendingRequest;
     this.simulator.clearPendingRequest(messageId);
-    const isResponsePayloadValid = this.ocppValidator.validateOcppResponsePayload(action, payload);
+    const { isValid } = this.ocppValidator.validateOcppResponsePayload(action, payload);
 
-    if (!isResponsePayloadValid) {
+    if (!isValid) {
       logger.error("Recieved invlid OCPP response message", { message });
       return;
     }
@@ -97,6 +98,8 @@ export class OcppService {
       handleBootNotificationResponse(this.simulator, payload as BootNotificationConf);
       break;
     case OcppMessageAction.HEARTBEAT:
+      break;
+    case OcppMessageAction.STATUS_NOTIFICATION:
       break;
     default:
       break;
@@ -139,6 +142,10 @@ export class OcppService {
 
   public hearbeatReq(): CallMessage<object> {
     return callMessage(OcppMessageAction.HEARTBEAT, {});
+  }
+
+  public statusNotificationReq(payload: StatusNotificationReq): CallMessage<StatusNotificationReq> {
+    return callMessage(OcppMessageAction.STATUS_NOTIFICATION, payload);
   }
 
   public bootNotificationReq(): CallMessage<BootNotificationReq> {
