@@ -50,10 +50,7 @@ export class OcppValidator {
 
   public validateOcppResponsePayload<P>(action: OcppMessageAction, payload: P): { isValid: boolean, errorCode?: OcppErrorCode } {
     if (!this.ocppResponsesValidators[action]) {
-      return { 
-        isValid: false, 
-        errorCode: OcppErrorCode.NOT_IMPLEMENTED 
-      };
+      return { isValid: true };
     }
 
     return this.validateOcppPayload(payload, this.ocppResponsesValidators[action]);

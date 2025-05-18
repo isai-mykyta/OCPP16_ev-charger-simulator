@@ -118,3 +118,13 @@ export type ChangeConfigurationReq = {
 export type ChangeConfigurationConf = {
   status: ConfigurationStatus;
 }
+
+export type StatusNotificationReq = {
+  connectorId: number;
+  errorCode: ChargePointErrorCode;
+  info?: string;
+  status: ChargePointStatus;
+  timestamp?: string;
+  vendorId?: string;
+  vendorErrorCode?: string;
+}

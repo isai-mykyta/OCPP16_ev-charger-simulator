@@ -1,7 +1,13 @@
 import { SimulatorOptions } from "./types";
 import { Connector } from "../connector";
 import { eventsService } from "../events";
-import { CallMessage, KeyValue, RegistrationStatus } from "../ocpp";
+import { 
+  CallMessage, 
+  ChargePointErrorCode, 
+  ChargePointStatus, 
+  KeyValue, 
+  RegistrationStatus 
+} from "../ocpp";
 import { WebSocketService } from "../websocket/websocket.service";
 
 export abstract class Simulator {
@@ -49,6 +55,26 @@ export abstract class Simulator {
     this.heartbeatTimer = setInterval(() => {
       eventsService.emit("triggerHeartbeat", { identity: this.identity });
     }, this.heartbeatInterval * 1000);
+
+    eventsService.emit("triggerStatusNotification", { 
+      identity: this.identity,
+      payload: {
+        connectorId: 0,
+        status: ChargePointStatus.AVAILABLE,
+        errorCode: ChargePointErrorCode.NO_ERROR
+      }
+    });
+
+    this.connectors.forEach((connector) => {
+      eventsService.emit("triggerStatusNotification", { 
+        identity: this.identity,
+        payload: {
+          connectorId: connector.id,
+          status: ChargePointStatus.AVAILABLE,
+          errorCode: ChargePointErrorCode.NO_ERROR
+        }
+      });
+    });
   }
 
   private setConfigKey(key: string, value: string, readonly: boolean): void {
