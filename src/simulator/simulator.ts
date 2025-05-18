@@ -33,7 +33,7 @@ export abstract class Simulator {
   public start(): void {
     this.wsService.connect({
       identity: this.identity,
-      webSocketPingInterval: 60,
+      webSocketPingInterval: this.webSocketPingInterval,
       webSocketUrl: this.webSocketUrl
     });
   }
@@ -108,5 +108,25 @@ export abstract class Simulator {
 
   public get heartbeatInterval(): number {
     return Number(this.configuration.find((config) => config.key === "HeartbeatInterval")?.value || 120);
+  }
+
+  public get webSocketPingInterval(): number {
+    return Number(this.configuration.find((config) => config.key === "WebSocketPingInterval")?.value || 60);
+  }
+
+  public set webSocketPingInterval(value: number) {
+    if (value < 10) return;
+
+    const configKey = this.configuration.find((config) => config.key === "WebSocketPingInterval");
+
+    if (configKey) {
+      configKey.value = value.toString();
+    } else {
+      this.configuration.push({ 
+        key: "WebSocketPingInterval", 
+        value: value.toString(), 
+        readonly: false 
+      });
+    }
   }
 }
