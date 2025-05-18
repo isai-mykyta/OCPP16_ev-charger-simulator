@@ -10,7 +10,12 @@ describe("SimulatorsRegistry", () => {
       configuration: [],
       model: "test-model",
       vendor: "test-vendor",
-      webSocketUrl: `ws://127.0.0.1:8081`
+      webSocketUrl: `ws://127.0.0.1:8081`,
+      connectors: [
+        {
+          type: "Type1"
+        }
+      ]
     });
   });
 
