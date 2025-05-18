@@ -1,4 +1,5 @@
 import { SimulatorOptions } from "./types";
+import { Connector } from "../connector";
 import { eventsService } from "../events";
 import { CallMessage, KeyValue, RegistrationStatus } from "../ocpp";
 import { WebSocketService } from "../websocket/websocket.service";
@@ -16,6 +17,7 @@ export abstract class Simulator {
   private heartbeatTimer: NodeJS.Timeout;
   
   private readonly pendingRequests = new Map<string, CallMessage<unknown>>();
+  private readonly connectors = new Map<number, Connector>();
   private readonly wsService: WebSocketService;
 
   constructor (options: SimulatorOptions) {
@@ -28,12 +30,36 @@ export abstract class Simulator {
     this._isOnline = false;
 
     this.wsService = new WebSocketService();
+
+    options.connectors.forEach((connector, idx) => {
+      this.connectors.set(idx + 1, new Connector({
+        id: idx + 1,
+        type: connector.type,
+      }));
+    });
+  }
+
+  private handleRejectedRegistrationStatus(): void {
+    setTimeout(() => {
+      eventsService.emit("triggerBootNotification", { identity: this.identity });
+    }, this.heartbeatInterval * 1000);
+  }
+
+  private handleAcceptedRegistrationStatus(): void {
+    this.heartbeatTimer = setInterval(() => {
+      eventsService.emit("triggerHeartbeat", { identity: this.identity });
+    }, this.heartbeatInterval * 1000);
+  }
+
+  private setConfigKey(key: string, value: string, readonly: boolean): void {
+    const configKey = this.configuration.find((config) => config.key === key);
+    configKey ? configKey.value = value : this.configuration.push({ key, readonly, value });
   }
 
   public start(): void {
     this.wsService.connect({
       identity: this.identity,
-      webSocketPingInterval: 60,
+      webSocketPingInterval: this.webSocketPingInterval,
       webSocketUrl: this.webSocketUrl
     });
   }
@@ -67,14 +93,15 @@ export abstract class Simulator {
   public set registrationStatus(status: RegistrationStatus) {
     this._registrationStatus = status;
 
-    if (status === RegistrationStatus.REJECTED) {
-      setTimeout(() => {
-        eventsService.emit("triggerBootNotification", { identity: this.identity });
-      }, this.heartbeatInterval * 1000);
-    } else if (status === RegistrationStatus.ACCEPTED) {
-      this.heartbeatTimer = setInterval(() => {
-        eventsService.emit("triggerHeartbeat", { identity: this.identity });
-      }, this.heartbeatInterval * 1000);
+    switch (status) {
+    case RegistrationStatus.REJECTED:
+      this.handleRejectedRegistrationStatus();
+      break;
+    case RegistrationStatus.ACCEPTED:
+      this.handleAcceptedRegistrationStatus();
+      break;
+    default:
+      break;
     }
   }
 
@@ -92,21 +119,19 @@ export abstract class Simulator {
 
   public set heartbeatInterval(value: number) {
     if (value < 10) return;
-
-    const configKey = this.configuration.find((config) => config.key === "HeartbeatInterval");
-
-    if (configKey) {
-      configKey.value = value.toString();
-    } else {
-      this.configuration.push({ 
-        key: "HeartbeatInterval", 
-        value: value.toString(), 
-        readonly: false 
-      });
-    }
+    this.setConfigKey("HeartbeatInterval", value.toString(), false);
   }
 
   public get heartbeatInterval(): number {
     return Number(this.configuration.find((config) => config.key === "HeartbeatInterval")?.value || 120);
+  }
+
+  public get webSocketPingInterval(): number {
+    return Number(this.configuration.find((config) => config.key === "WebSocketPingInterval")?.value || 60);
+  }
+
+  public set webSocketPingInterval(value: number) {
+    if (value < 10) return;
+    this.setConfigKey("WebSocketPingInterval", value.toString(), false);
   }
 }

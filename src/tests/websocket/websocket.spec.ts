@@ -18,7 +18,12 @@ describe("WebSocketClient", () => {
       configuration: [],
       model: "test-model",
       vendor: "test-vendor",
-      webSocketUrl: `ws://127.0.0.1:${wssPort}`
+      webSocketUrl: `ws://127.0.0.1:${wssPort}`,
+      connectors: [
+        {
+          type: "Type1"
+        }
+      ]
     });
 
     simulatorsRegistry.addSimulator(testSimulator);

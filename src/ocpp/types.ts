@@ -11,7 +11,8 @@ export enum OcppMessageAction {
   GET_CONFIGURATION = "GetConfiguration",
   CHANGE_CONFIGURATION = "ChangeConfiguration",
   REMOTE_STOP_TRANSACTION = "RemoteStopTransaction",
-  REMOTE_START_TRANSACTION = "RemoteStartTransaction"
+  REMOTE_START_TRANSACTION = "RemoteStartTransaction",
+  STATUS_NOTIFICATION = "StatusNotification",
 }
 
 export enum OcppErrorCode {
@@ -38,6 +39,37 @@ export enum ConfigurationStatus {
   REJECTED = "Rejected",
   REBOOT_REQUIRED = "RebootRequired",
   NOT_SUPPORTED = "NotSupported"
+}
+
+export enum ChargePointStatus {
+  AVAILABLE = "Available",
+  PREPARING = "Preparing",
+  CHARGING = "Charging",
+  SUSPENDED_EVSE = "SuspendedEVSE",
+  SUSPENDED_EV = "SuspendedEV",
+  FINISHING = "Finishing",
+  RESERVED = "Reserved",
+  UNAVAILABLE = "Unavailable",
+  FAULTED = "Faulted"
+}
+
+export enum ChargePointErrorCode {
+  CONNECTOR_LOCK_FAILURE = "ConnectorLockFailure",
+  EV_COMMUNICATION_ERROR = "EVCommunicationError",
+  GROUND_FAILURE = "GroundFailure",
+  HIGH_TEMPERATURE = "HighTemperature",
+  INTERNAL_ERROR = "InternalError",
+  LOCAL_LIST_CONFLICT = "LocalListConflict",
+  NO_ERROR = "NoError",
+  OTHER_ERROR = "OtherError",
+  OVER_CURRENT_FAILURE = "OverCurrentFailure",
+  OVER_VOLTAGE = "OverVoltage",
+  POWER_METER_FAILURE = "PowerMeterFailure",
+  POWER_SWITCH_FAILURE = "PowerSwitchFailure",
+  READER_FAILURE = "ReaderFailure",
+  RESET_FAILURE = "ResetFailure",
+  UNDER_VOLTAGE = "UnderVoltage",
+  WEAK_SIGNAL = "WeakSignal"
 }
 
 export type CallMessage<P> = [OcppMessageType.CALL, string, OcppMessageAction, P];
