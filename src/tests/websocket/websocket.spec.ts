@@ -130,7 +130,12 @@ describe("WebSocketClient", () => {
           const [, msgId, action] = JSON.parse(data.toString());
   
           if (action === "BootNotification") {
-            const payload = { interval: 120, status: RegistrationStatus.PENDING };
+            const payload = { 
+              interval: 120, 
+              status: RegistrationStatus.PENDING, 
+              currentTime: new Date().toISOString() 
+            };
+            
             socket.send(JSON.stringify([3, msgId, payload]));
             await new Promise<void>((resolve) => setTimeout(() => resolve(), 1000));
 

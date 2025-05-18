@@ -89,7 +89,7 @@ export class OcppService {
     const { isValid } = this.ocppValidator.validateOcppResponsePayload(action, payload);
 
     if (!isValid) {
-      logger.error("Recieved invlid OCPP response message", { message });
+      logger.error("Recieved invalid OCPP response message", { message: JSON.stringify(message) });
       return;
     }
 
