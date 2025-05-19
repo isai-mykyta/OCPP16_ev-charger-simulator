@@ -15,7 +15,6 @@ import {
   StatusNotificationReq
 } from "./types";
 import { logger } from "../logger";
-import { simulatorsRegistry } from "../registry";
 import { OcppValidator } from "./ocpp.validator";
 import { Simulator } from "../simulator";
 import { 
@@ -122,14 +121,13 @@ export class OcppService {
   public handleMessage(message: OcppMessage<unknown>): void {
     const [messageType] = message;
     const isValidOcppMessage = Array.isArray(message) && [2, 3, 4].includes(messageType);
-    const simulatorState = simulatorsRegistry.getSimulator(this.simulator.identity);
 
     if (!isValidOcppMessage) {
       logger.error("Invalid OCPP message received", { message });
       return;
     }
 
-    if (simulatorState?.registrationStatus === RegistrationStatus.REJECTED) {
+    if (this.simulator.registrationStatus === RegistrationStatus.REJECTED) {
       logger.error("While Rejected, the Charge Point SHALL NOT respond to any Central System initiated message");
       return;
     }
