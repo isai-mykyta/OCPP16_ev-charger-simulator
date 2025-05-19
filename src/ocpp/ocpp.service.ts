@@ -1,4 +1,4 @@
-import { Subject } from "rxjs";
+import { filter, map, Subject, tap } from "rxjs";
 
 import { 
   BootNotificationConf,
@@ -35,8 +35,30 @@ export class OcppService {
   private readonly _ocppResponse$ = new Subject<OcppMessage<unknown>>();
   public readonly ocppResponse$ = this._ocppResponse$.asObservable();
 
+  private readonly _ocppRequest$ = new Subject<CallMessage<unknown>>();
+  public readonly ocppRequest$ = this._ocppRequest$.asObservable();
+
   constructor (simulator: Simulator) {
     this.simulator = simulator;
+
+    this.simulator.ocppRequest$.pipe(
+      map(({ action, payload }) => this.getOcppRequest(action, payload)),
+      filter((req): req is CallMessage<object> => req !== null),
+      tap((req) => this._ocppRequest$.next(req))
+    ).subscribe();   
+  }
+
+  private getOcppRequest<P>(action: OcppMessageAction, payload?: P): CallMessage<unknown> {
+    switch (action) {
+    case OcppMessageAction.BOOT_NOTIFICATION:
+      return this.bootNotificationReq();
+    case OcppMessageAction.HEARTBEAT:
+      return this.hearbeatReq();
+    case OcppMessageAction.STATUS_NOTIFICATION:
+      return this.statusNotificationReq(payload as StatusNotificationReq);
+    default:
+      return null;
+    }
   }
 
   private handleCallMessage(message: CallMessage<unknown>): CallResultMessage<unknown> | CallErrorMessage | undefined {
