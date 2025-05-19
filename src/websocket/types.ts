@@ -1,5 +1,6 @@
-export type ConnectOptions = {
-  webSocketUrl: string;
-  identity: string;
+import { Simulator } from "../simulator";
+
+export type WebSocketOptions = {
+  simulator: Simulator;
   webSocketPingInterval: number;
 }

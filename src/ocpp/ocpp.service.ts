@@ -1,3 +1,5 @@
+import { Subject } from "rxjs";
+
 import { 
   BootNotificationConf,
   BootNotificationReq,
@@ -30,9 +32,12 @@ import {
 export class OcppService {
   private readonly ocppValidator = new OcppValidator();
   private readonly simulator: Simulator;
+  
+  private readonly _ocppResponse$ = new Subject<OcppMessage<unknown>>();
+  public readonly ocppResponse$ = this._ocppResponse$.asObservable();
 
-  constructor (identity: string) {
-    this.simulator = simulatorsRegistry.getSimulator(identity);
+  constructor (simulator: Simulator) {
+    this.simulator = simulator;
   }
 
   private handleCallMessage(message: CallMessage<unknown>): CallResultMessage<unknown> | CallErrorMessage | undefined {
@@ -56,22 +61,26 @@ export class OcppService {
     if (!isValid) {
       const errorMessage = callErrorMessage(messageId, errorCode);
       logger.error("Error during validation of OCPP call message payload", { errorMessage });
-      return errorMessage;
+      this._ocppResponse$.next(errorMessage);
+      return;
     }
 
     switch (action) {
     case OcppMessageAction.GET_CONFIGURATION: {
       const responsePayload = handleGetConfigurationRequest(this.simulator, payload);
-      return callResultMessage(messageId, responsePayload);
+      this._ocppResponse$.next(callResultMessage(messageId, responsePayload));
+      return;
     }
     case OcppMessageAction.CHANGE_CONFIGURATION: {
       const responsePayload = handleChangeConfigurationRequest(this.simulator, payload as ChangeConfigurationReq);
-      return callResultMessage(messageId, responsePayload);
+      this._ocppResponse$.next(callResultMessage(messageId, responsePayload));
+      return;
     }
     default:
       const errorMessage = callErrorMessage(messageId, OcppErrorCode.NOT_IMPLEMENTED);
+      this._ocppResponse$.next(errorMessage);
       logger.error("Not supported OCPP message ", { message });
-      return errorMessage;
+      return;
     }
   }
 
@@ -110,7 +119,7 @@ export class OcppService {
     logger.error("Call error message received", { message });
   }
 
-  public handleMessage(message: OcppMessage<unknown>): CallResultMessage<unknown> | CallErrorMessage | undefined {
+  public handleMessage(message: OcppMessage<unknown>): void {
     const [messageType] = message;
     const isValidOcppMessage = Array.isArray(message) && [2, 3, 4].includes(messageType);
     const simulatorState = simulatorsRegistry.getSimulator(this.simulator.identity);
@@ -127,8 +136,8 @@ export class OcppService {
 
     switch (messageType) {
     case OcppMessageType.CALL:
-      const result = this.handleCallMessage(message);
-      return result;
+      this.handleCallMessage(message);
+      break;
     case OcppMessageType.RESULT:
       this.handleCallResultMessage(message);
       break;

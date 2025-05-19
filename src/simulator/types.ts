@@ -1,5 +1,5 @@
 import { ConnectorType } from "../connector";
-import { KeyValue } from "../ocpp";
+import { KeyValue, OcppMessageAction } from "../ocpp";
 
 export type SimulatorOptions = {
   configuration: KeyValue[];
@@ -8,4 +8,9 @@ export type SimulatorOptions = {
   model: string;
   vendor: string;
   connectors: { type: ConnectorType }[];
+}
+
+export type OcppRequestEvent = {
+  action: OcppMessageAction;
+  payload?: unknown;
 }
