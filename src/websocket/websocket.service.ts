@@ -1,38 +1,43 @@
 import WebSocket from "ws";
 
 import { logger } from "../logger";
-import { OcppService, OcppMessage } from "../ocpp";
-import { ConnectOptions } from "./types";
-import { eventsService } from "../events";
-import { simulatorsRegistry } from "../registry";
+import { OcppService, OcppMessage, OcppMessageAction, StatusNotificationReq } from "../ocpp";
+import { WebSocketOptions } from "./types";
+import { Simulator } from "../simulator";
 
 export class WebSocketService {
   private wsClient: WebSocket;
   private pingInterval: NodeJS.Timeout;
   private webSocketPingInterval: number;
   private ocppService: OcppService;
-  private identity: string;
+  private simulator: Simulator;
 
-  constructor () {
-    eventsService.on("triggerBootNotification", ({ identity }) => {
-      if (identity === this.identity) {
+  constructor (options: WebSocketOptions) {
+    this.simulator = options.simulator;
+    this.webSocketPingInterval = options.webSocketPingInterval;
+    this.ocppService = new OcppService(this.simulator);
+
+    this.simulator.ocppRequest$.subscribe((request) => {
+      switch (request.action) {
+      case OcppMessageAction.BOOT_NOTIFICATION:
         const bootRequest = this.ocppService.bootNotificationReq();
         this.sendRequest(JSON.stringify(bootRequest));
-      }
-    });
-
-    eventsService.on("triggerHeartbeat", ({ identity }) => {
-      if (identity === this.identity) {
+        break;
+      case OcppMessageAction.HEARTBEAT:
         const heartbeatRequest = this.ocppService.hearbeatReq();
         this.sendRequest(JSON.stringify(heartbeatRequest));
+        break;
+      case OcppMessageAction.STATUS_NOTIFICATION:
+        const statusNotificationRequest = this.ocppService.statusNotificationReq(request.payload as StatusNotificationReq);
+        this.sendRequest(JSON.stringify(statusNotificationRequest));
+        break;
+      default:
+        break;
       }
     });
 
-    eventsService.on("triggerStatusNotification", ({ identity, payload }) => {
-      if (identity === this.identity) {
-        const statusNotificationRequest = this.ocppService.statusNotificationReq(payload);
-        this.sendRequest(JSON.stringify(statusNotificationRequest));
-      }
+    this.ocppService.ocppResponse$.subscribe((response) => {
+      this.send(JSON.stringify(response));
     });
   }
 
@@ -46,7 +51,7 @@ export class WebSocketService {
     this.wsClient = null;
     this.webSocketPingInterval = null;
     this.ocppService = null;
-    this.identity = null;
+    this.simulator = null;
 
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
@@ -55,12 +60,9 @@ export class WebSocketService {
   }
 
   private onOpen(): void {
-    const simulator = simulatorsRegistry.getSimulator(this.identity);
-    if (simulator) simulator.isOnline = true;
-
+    this.simulator.isOnline = true;
     logger.info("WebSocket connection is opened");
     this.startPingInterval();
-    eventsService.emit("triggerBootNotification", { identity: this.identity });
   }
 
   private onPing(): void {
@@ -68,9 +70,7 @@ export class WebSocketService {
   }
 
   private onClose(): void {
-    const simulator = simulatorsRegistry.getSimulator(this.identity);
-    if (simulator) simulator.isOnline = false;
-
+    this.simulator.isOnline = false;
     logger.warn("WebSocket connection is closed");
     this.clear();
   } 
@@ -84,9 +84,8 @@ export class WebSocketService {
   }
 
   private sendRequest(message: string): void {
-    const simulator = simulatorsRegistry.getSimulator(this.identity);
     this.send(message);
-    simulator.storePendingRequest(JSON.parse(message));
+    this.simulator.storePendingRequest(JSON.parse(message));
   }
 
   private onMessage(data: WebSocket.RawData): void {
@@ -101,20 +100,11 @@ export class WebSocketService {
       logger.error("Failed to parse incoming WS message");
     }
 
-    const response = this.ocppService.handleMessage(parsedMessage);
-
-    if (response) {
-      this.send(JSON.stringify(response));
-      return;
-    }
+    this.ocppService.handleMessage(parsedMessage);
   }
 
-  public connect(options: ConnectOptions): void {
-    this.webSocketPingInterval = options.webSocketPingInterval;
-    this.identity = options.identity;
-
-    this.ocppService = new OcppService(this.identity);
-    this.wsClient = new WebSocket(`${options.webSocketUrl}/${this.identity}`, "ocpp1.6");
+  public connect(): void {
+    this.wsClient = new WebSocket(`${this.simulator.webSocketUrl}/${this.simulator.identity}`, "ocpp1.6");
 
     this.wsClient.on("open", this.onOpen.bind(this));
     this.wsClient.on("ping", this.onPing.bind(this));
@@ -124,9 +114,7 @@ export class WebSocketService {
   }
 
   public disconnect(): void {
-    const simulator = simulatorsRegistry.getSimulator(this.identity);
-    if (simulator) simulator.isOnline = false;
-
+    this.simulator.isOnline = false;
     this.wsClient?.close();
     this.clear();
   }

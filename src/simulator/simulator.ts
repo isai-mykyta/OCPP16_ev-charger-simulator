@@ -1,11 +1,13 @@
-import { SimulatorOptions } from "./types";
+import { Subject } from "rxjs";
+
+import { OcppRequestEvent, SimulatorOptions } from "./types";
 import { Connector } from "../connector";
-import { eventsService } from "../events";
 import { 
   CallMessage, 
   ChargePointErrorCode, 
   ChargePointStatus, 
   KeyValue, 
+  OcppMessageAction, 
   RegistrationStatus 
 } from "../ocpp";
 import { WebSocketService } from "../websocket/websocket.service";
@@ -19,12 +21,15 @@ export abstract class Simulator {
 
   private _isOnline: boolean;
   private _registrationStatus: RegistrationStatus;
+
+  private readonly _ocppRequest$ = new Subject<OcppRequestEvent>();
+  public readonly ocppRequest$ = this._ocppRequest$.asObservable();
   
   private heartbeatTimer: NodeJS.Timeout;
+  private wsService: WebSocketService;
   
   private readonly pendingRequests = new Map<string, CallMessage<unknown>>();
   private readonly connectors = new Map<number, Connector>();
-  private readonly wsService: WebSocketService;
 
   constructor (options: SimulatorOptions) {
     this.webSocketUrl = options.webSocketUrl;
@@ -34,30 +39,32 @@ export abstract class Simulator {
     this.configuration = options.configuration;
 
     this._isOnline = false;
+    this.initConnectors(options.connectors);
+  }
 
-    this.wsService = new WebSocketService();
+  private initConnector(connector: Connector): void {
+    this.connectors.set(connector.id, connector);
+  }
 
-    options.connectors.forEach((connector, idx) => {
-      this.connectors.set(idx + 1, new Connector({
-        id: idx + 1,
-        type: connector.type,
-      }));
+  private initConnectors(connectors: Partial<Connector>[]): void {
+    connectors.forEach((connector, idx) => {
+      this.initConnector(new Connector({ type: connector.type, id: idx + 1 }));
     });
   }
 
   private handleRejectedRegistrationStatus(): void {
     setTimeout(() => {
-      eventsService.emit("triggerBootNotification", { identity: this.identity });
+      this._ocppRequest$.next({ action: OcppMessageAction.BOOT_NOTIFICATION });
     }, this.heartbeatInterval * 1000);
   }
 
   private handleAcceptedRegistrationStatus(): void {
     this.heartbeatTimer = setInterval(() => {
-      eventsService.emit("triggerHeartbeat", { identity: this.identity });
+      this._ocppRequest$.next({ action: OcppMessageAction.HEARTBEAT });
     }, this.heartbeatInterval * 1000);
 
-    eventsService.emit("triggerStatusNotification", { 
-      identity: this.identity,
+    this._ocppRequest$.next({ 
+      action: OcppMessageAction.STATUS_NOTIFICATION, 
       payload: {
         connectorId: 0,
         status: ChargePointStatus.AVAILABLE,
@@ -66,8 +73,8 @@ export abstract class Simulator {
     });
 
     this.connectors.forEach((connector) => {
-      eventsService.emit("triggerStatusNotification", { 
-        identity: this.identity,
+      this._ocppRequest$.next({ 
+        action: OcppMessageAction.STATUS_NOTIFICATION, 
         payload: {
           connectorId: connector.id,
           status: ChargePointStatus.AVAILABLE,
@@ -83,16 +90,19 @@ export abstract class Simulator {
   }
 
   public start(): void {
-    this.wsService.connect({
-      identity: this.identity,
+    this.wsService = new WebSocketService({
+      simulator: this,
       webSocketPingInterval: this.webSocketPingInterval,
-      webSocketUrl: this.webSocketUrl
     });
+
+    this.wsService.connect();
+    this._ocppRequest$.next({ action: OcppMessageAction.BOOT_NOTIFICATION });
   }
 
   public stop(): void {
     this.wsService.disconnect();
     this.registrationStatus = null;
+    this.wsService = null;
 
     if (this.heartbeatTimer) {
       clearInterval(this.heartbeatTimer);
