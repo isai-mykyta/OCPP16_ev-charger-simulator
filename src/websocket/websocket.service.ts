@@ -1,7 +1,7 @@
 import WebSocket from "ws";
 
 import { logger } from "../logger";
-import { OcppService, OcppMessage, OcppMessageAction, StatusNotificationReq } from "../ocpp";
+import { OcppService, OcppMessage } from "../ocpp";
 import { WebSocketOptions } from "./types";
 import { Simulator } from "../simulator";
 
@@ -17,23 +17,8 @@ export class WebSocketService {
     this.webSocketPingInterval = options.webSocketPingInterval;
     this.ocppService = new OcppService(this.simulator);
 
-    this.simulator.ocppRequest$.subscribe((request) => {
-      switch (request.action) {
-      case OcppMessageAction.BOOT_NOTIFICATION:
-        const bootRequest = this.ocppService.bootNotificationReq();
-        this.sendRequest(JSON.stringify(bootRequest));
-        break;
-      case OcppMessageAction.HEARTBEAT:
-        const heartbeatRequest = this.ocppService.hearbeatReq();
-        this.sendRequest(JSON.stringify(heartbeatRequest));
-        break;
-      case OcppMessageAction.STATUS_NOTIFICATION:
-        const statusNotificationRequest = this.ocppService.statusNotificationReq(request.payload as StatusNotificationReq);
-        this.sendRequest(JSON.stringify(statusNotificationRequest));
-        break;
-      default:
-        break;
-      }
+    this.ocppService.ocppRequest$.subscribe((request) => {
+      this.sendRequest(JSON.stringify(request));
     });
 
     this.ocppService.ocppResponse$.subscribe((response) => {
