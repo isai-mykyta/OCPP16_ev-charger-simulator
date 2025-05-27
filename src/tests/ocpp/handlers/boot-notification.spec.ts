@@ -1,15 +1,14 @@
-import { RegistrationStatus } from "../../../ocpp";
+import { KeyValue, RegistrationStatus } from "../../../ocpp";
 import { handleBootNotificationResponse } from "../../../ocpp/handlers";
-import { simulatorsRegistry } from "../../../registry";
 import { TestSimulator } from "../../fixtures";
 
 describe("handleBootNotificationResponse", () => {
-  let testSimulator: TestSimulator;
+  let simulator: TestSimulator;
 
   beforeEach(() => {
-    testSimulator = new TestSimulator({
+    simulator = new TestSimulator({
       chargePointIdentity: "TEST.SIMULATOR",
-      configuration: [],
+      configuration: [] as KeyValue[],
       model: "test-model",
       vendor: "test-vendor",
       webSocketUrl: `ws://127.0.0.1:8081`,
@@ -19,22 +18,16 @@ describe("handleBootNotificationResponse", () => {
         }
       ]
     });
-  
-    simulatorsRegistry.addSimulator(testSimulator);
-  });
-
-  afterEach(() => {
-    simulatorsRegistry.clear();
   });
 
   test("should handle OCPP boot notification response", () => {
-    handleBootNotificationResponse(testSimulator, { 
+    handleBootNotificationResponse(simulator, { 
       status: RegistrationStatus.PENDING, 
       interval: 120, 
       currentTime: new Date().toISOString() 
     });
 
-    expect(testSimulator.registrationStatus).toBe(RegistrationStatus.PENDING);
-    expect(testSimulator.heartbeatInterval).toBe(120);
+    expect(simulator.registrationStatus).toBe(RegistrationStatus.PENDING);
+    expect(simulator.heartbeatInterval).toBe(120);
   });
 });
