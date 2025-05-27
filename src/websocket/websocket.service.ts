@@ -99,8 +99,6 @@ export class WebSocketService {
   }
 
   public disconnect(): void {
-    this.simulator.isOnline = false;
     this.wsClient?.close();
-    this.clear();
   }
 }

@@ -1,6 +1,7 @@
 import { logger } from "../../logger";
 import { 
   CallMessage, 
+  KeyValue, 
   OcppErrorCode, 
   OcppMessage, 
   OcppMessageAction, 
@@ -8,17 +9,17 @@ import {
   OcppService, 
   RegistrationStatus 
 } from "../../ocpp";
-import { simulatorsRegistry } from "../../registry";
 import { TestSimulator } from "../fixtures";
+
 
 describe("OCPP service", () => {
   let ocppService: OcppService;
-  let testSimulator: TestSimulator;
+  let simulator: TestSimulator;
 
   beforeEach(() => {
-    testSimulator = new TestSimulator({
+    simulator = new TestSimulator({
       chargePointIdentity: "TEST.SIMULATOR",
-      configuration: [],
+      configuration: [] as KeyValue[],
       model: "test-model",
       vendor: "test-vendor",
       webSocketUrl: `ws://127.0.0.1:8081`,
@@ -29,13 +30,11 @@ describe("OCPP service", () => {
       ]
     });
 
-    simulatorsRegistry.addSimulator(testSimulator);
-    ocppService = new OcppService(testSimulator.identity);
+    ocppService = new OcppService(simulator);
   });
 
   afterEach(() => {
     jest.resetAllMocks();
-    simulatorsRegistry.clear();
   });
 
   test("should not handle invalid OCPP message", () => {
@@ -61,7 +60,7 @@ describe("OCPP service", () => {
 
   test("should not handle OCPP message when registration status is rejected", () => {
     jest.useFakeTimers();
-    testSimulator.registrationStatus = RegistrationStatus.REJECTED;
+    simulator.registrationStatus = RegistrationStatus.REJECTED;
     const ocppMessage = [2, "id", OcppMessageAction.HEARTBEAT, {}] as CallMessage<object>;
     jest.spyOn(logger, "error");
     ocppService.handleMessage(ocppMessage);
@@ -71,7 +70,7 @@ describe("OCPP service", () => {
 
   test("should not allow transaction requests while CS being rejected by Central System", () => {
     jest.useFakeTimers();
-    testSimulator.registrationStatus = RegistrationStatus.PENDING;
+    simulator.registrationStatus = RegistrationStatus.PENDING;
     const startTransactionReq = [2, "id", OcppMessageAction.REMOTE_START_TRANSACTION, {}] as CallMessage<object>;
     const stopTransactionReq = [2, "id", OcppMessageAction.REMOTE_STOP_TRANSACTION, {}] as CallMessage<object>;
 
@@ -84,24 +83,34 @@ describe("OCPP service", () => {
     jest.useRealTimers();
   });
 
-  test("should return OCPP error message if OCPP request payload is invalid", () => {
+  test("should return OCPP error message if OCPP request payload is invalid", (done) => {
     jest.useFakeTimers();
-    const invalidOcppCallMessage = [2, "id", OcppMessageAction.BOOT_NOTIFICATION, {}] as OcppMessage<unknown>;
-    const ocppError = ocppService.handleMessage(invalidOcppCallMessage);
 
-    expect(ocppError[0]).toBe(4);
-    expect(ocppError[1]).toBe("id");
-    expect(ocppError.length).toBe(5);
+    const subscription = ocppService.ocppResponse$.subscribe((ocppError) => {
+      expect(ocppError[0]).toBe(4);
+      expect(ocppError[1]).toBe("id");
+      expect(ocppError.length).toBe(5);
+      done();
+    });
+
+    const invalidOcppCallMessage = [2, "id", OcppMessageAction.BOOT_NOTIFICATION, {}] as OcppMessage<unknown>;
+    ocppService.handleMessage(invalidOcppCallMessage);
+
     jest.useRealTimers();
+    subscription.unsubscribe();
   });
 
-  test("should return NOT_IMPLEMENTED exception if request action is uknown", () => {
-    const callMessage = [2, "id", "UknownAction" as OcppMessageAction, {}] as OcppMessage<unknown>;
-    const ocppError = ocppService.handleMessage(callMessage);
+  test("should return NOT_IMPLEMENTED exception if request action is uknown", (done) => {
+    const subscription = ocppService.ocppResponse$.subscribe((ocppError) => {
+      expect(ocppError[0]).toBe(4);
+      expect(ocppError[1]).toBe("id");
+      expect(ocppError[2]).toStrictEqual(OcppErrorCode.NOT_IMPLEMENTED);
+      done();
+    });
 
-    expect(ocppError[0]).toBe(4);
-    expect(ocppError[1]).toBe("id");
-    expect(ocppError[2]).toStrictEqual(OcppErrorCode.NOT_IMPLEMENTED);
+    const callMessage = [2, "id", "UknownAction" as OcppMessageAction, {}] as OcppMessage<unknown>;
+    ocppService.handleMessage(callMessage);
+    subscription.unsubscribe();
   });
 
   test("should constrcut boot notification request", () => {
