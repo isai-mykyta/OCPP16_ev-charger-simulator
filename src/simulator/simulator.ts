@@ -48,7 +48,11 @@ export abstract class Simulator {
 
   private initConnectors(connectors: Partial<Connector>[]): void {
     connectors.forEach((connector, idx) => {
-      this.initConnector(new Connector({ type: connector.type, id: idx + 1 }));
+      this.initConnector(new Connector({ 
+        type: connector.type, 
+        id: idx + 1,
+        maxCurrent: connector.maxCurrent 
+      }));
     });
   }
 

@@ -7,7 +7,10 @@ export type SimulatorOptions = {
   chargePointIdentity: string;
   model: string;
   vendor: string;
-  connectors: { type: ConnectorType }[];
+  connectors: { 
+    type: ConnectorType, 
+    maxCurrent: number 
+  }[];
 }
 
 export type OcppRequestEvent = {

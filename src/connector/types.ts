@@ -15,4 +15,5 @@ export type ConnectorType =
 export type ConnectorOptions = {
   id: number;
   type: ConnectorType;
+  maxCurrent: number;
 }
