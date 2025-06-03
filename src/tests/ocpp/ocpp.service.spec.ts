@@ -24,6 +24,7 @@ describe("OCPP service", () => {
       model: "test-model",
       vendor: "test-vendor",
       webSocketUrl: `ws://127.0.0.1:8081`,
+      chargePointSerialNumber: "000001",
       connectors: [
         {
           maxCurrent: 500,

@@ -7,6 +7,7 @@ export type SimulatorOptions = {
   chargePointIdentity: string;
   model: string;
   vendor: string;
+  chargePointSerialNumber: string;
   connectors: { 
     type: ConnectorType, 
     maxCurrent: number 

@@ -182,18 +182,17 @@ export class OcppService {
     const iccid = this.simulator.configuration.find((v) => v.key === "Iccid");
     const meterType = this.simulator.configuration.find((v) => v.key === "MeterType");
     const firmwareVersion = this.simulator.configuration.find((v) => v.key === "FirmwareVersion");
-    const chargePointSerialNumber = this.simulator.configuration.find((v) => v.key === "ChargePointSerialNumber");
     const meterSerialNumber = this.simulator.configuration.find((v) => v.key === "MeterSerialNumber");
     const chargeBoxSerialNumber = this.simulator.configuration.find((v) => v.key === "ChargeBoxSerialNumber");
 
     const payload: BootNotificationReq = {
       chargePointModel: this.simulator.model,
       chargePointVendor: this.simulator.vendor,
+      chargePointSerialNumber: this.simulator.chargePointSerialNumber,
       ...(imsi && { imsi: imsi.value }),
       ...(iccid && { iccid: iccid.value }),
       ...(meterType && { meterType: meterType.value }),
       ...(firmwareVersion && { firmwareVersion: firmwareVersion.value }),
-      ...(chargePointSerialNumber && { chargePointSerialNumber: chargePointSerialNumber.value }),
       ...(meterSerialNumber && { meterSerialNumber: meterSerialNumber.value }),
       ...(chargeBoxSerialNumber && { chargeBoxSerialNumber: chargeBoxSerialNumber.value }),
     };

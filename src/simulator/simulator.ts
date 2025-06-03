@@ -18,6 +18,7 @@ export abstract class Simulator {
   public readonly model: string;
   public readonly vendor: string;
   public readonly configuration: KeyValue[];
+  public readonly chargePointSerialNumber: string;
 
   private _isOnline: boolean;
   private _registrationStatus: RegistrationStatus;
@@ -37,6 +38,7 @@ export abstract class Simulator {
     this.model = options.model;
     this.vendor = options.vendor;
     this.configuration = options.configuration;
+    this.chargePointSerialNumber = options.chargePointSerialNumber;
 
     this._isOnline = false;
     this.initConnectors(options.connectors);

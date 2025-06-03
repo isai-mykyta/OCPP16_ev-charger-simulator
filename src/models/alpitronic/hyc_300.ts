@@ -181,7 +181,7 @@ const connectors = [
 ];
 
 export class AlpitronicHyc300 extends Simulator {
-  constructor (options: Pick<SimulatorOptions, "chargePointIdentity" | "webSocketUrl">) {
+  constructor (options: Pick<SimulatorOptions, "chargePointIdentity" | "webSocketUrl" | "chargePointSerialNumber">) {
     super({
       ...options,
       configuration,

@@ -10,6 +10,7 @@ describe("handleBootNotificationResponse", () => {
     simulator = new TestSimulator({
       chargePointIdentity: "TEST.SIMULATOR",
       configuration: [] as KeyValue[],
+      chargePointSerialNumber: "000001",
       model: "test-model",
       vendor: "test-vendor",
       webSocketUrl: `ws://127.0.0.1:8081`,
