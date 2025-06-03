@@ -135,7 +135,7 @@ const configuration = [
   {
     readonly: false,
     key: "WebSocketUser",
-    value: "spirii-qa",
+    value: "alpitronic_HYC300",
   },
   {
     readonly: false,
