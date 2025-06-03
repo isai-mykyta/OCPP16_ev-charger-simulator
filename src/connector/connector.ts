@@ -4,6 +4,7 @@ import { ConnectorOptions, ConnectorType } from "./types";
 export class Connector {
   public readonly id: number;
   public readonly type: ConnectorType;
+  public readonly maxCurrent: number;
 
   private _status: ChargePointStatus;
   private _errorCode: ChargePointErrorCode;
@@ -13,6 +14,7 @@ export class Connector {
   constructor (options: ConnectorOptions) {
     this.id = options.id;
     this.type = options.type;
+    this.maxCurrent = options.maxCurrent;
 
     this._status = ChargePointStatus.AVAILABLE;
     this._errorCode = ChargePointErrorCode.NO_ERROR;

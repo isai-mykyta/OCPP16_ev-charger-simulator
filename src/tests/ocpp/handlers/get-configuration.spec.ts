@@ -1,3 +1,4 @@
+import { ConnectorType } from "../../../connector";
 import { KeyValue } from "../../../ocpp";
 import { handleGetConfigurationRequest } from "../../../ocpp/handlers";
 import { TestSimulator } from "../../fixtures";
@@ -30,8 +31,13 @@ describe("handleGetConfigurationRequest", () => {
       webSocketUrl: `ws://127.0.0.1:8081`,
       connectors: [
         {
-          type: "Type1"
-        }
+          maxCurrent: 500,
+          type: "CCS" as ConnectorType
+        },
+        {
+          maxCurrent: 125,
+          type: "CHAdeMO" as ConnectorType
+        },
       ]
     });
   });

@@ -5,7 +5,7 @@ export const handleGetConfigurationRequest = (
   simulator: Simulator, 
   request: GetConfigurationReq
 ): GetConfigurationConf => {
-  const configKeysLimit = Number(simulator.configuration.find((config) => config.key === "GetConfigurationMaxKeys")?.value || 1000);
+  const configKeysLimit = Number(simulator.configuration.find((config) => config.key === "GetConfigurationMaxKeys")?.value || 100);
 
   if (!request.key) {
     return {

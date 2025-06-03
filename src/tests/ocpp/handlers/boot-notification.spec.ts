@@ -1,3 +1,4 @@
+import { ConnectorType } from "../../../connector";
 import { KeyValue, RegistrationStatus } from "../../../ocpp";
 import { handleBootNotificationResponse } from "../../../ocpp/handlers";
 import { TestSimulator } from "../../fixtures";
@@ -14,8 +15,13 @@ describe("handleBootNotificationResponse", () => {
       webSocketUrl: `ws://127.0.0.1:8081`,
       connectors: [
         {
-          type: "Type1"
-        }
+          maxCurrent: 500,
+          type: "CCS" as ConnectorType
+        },
+        {
+          maxCurrent: 125,
+          type: "CHAdeMO" as ConnectorType
+        },
       ]
     });
   });

@@ -178,13 +178,13 @@ export class OcppService {
   }
 
   public bootNotificationReq(): CallMessage<BootNotificationReq> {
-    const imsi = this.simulator.configuration.find((v) => v.key === "imsi");
-    const iccid = this.simulator.configuration.find((v) => v.key === "iccid");
-    const meterType = this.simulator.configuration.find((v) => v.key === "meterType");
-    const firmwareVersion = this.simulator.configuration.find((v) => v.key === "firmwareVersion");
-    const chargePointSerialNumber = this.simulator.configuration.find((v) => v.key === "chargePointSerialNumber");
-    const meterSerialNumber = this.simulator.configuration.find((v) => v.key === "meterSerialNumber");
-    const chargeBoxSerialNumber = this.simulator.configuration.find((v) => v.key === "chargeBoxSerialNumber");
+    const imsi = this.simulator.configuration.find((v) => v.key === "Imsi");
+    const iccid = this.simulator.configuration.find((v) => v.key === "Iccid");
+    const meterType = this.simulator.configuration.find((v) => v.key === "MeterType");
+    const firmwareVersion = this.simulator.configuration.find((v) => v.key === "FirmwareVersion");
+    const chargePointSerialNumber = this.simulator.configuration.find((v) => v.key === "ChargePointSerialNumber");
+    const meterSerialNumber = this.simulator.configuration.find((v) => v.key === "MeterSerialNumber");
+    const chargeBoxSerialNumber = this.simulator.configuration.find((v) => v.key === "ChargeBoxSerialNumber");
 
     const payload: BootNotificationReq = {
       chargePointModel: this.simulator.model,
