@@ -14,6 +14,7 @@ describe("WebSocketClient", () => {
 
     simulator = new TestSimulator({
       chargePointIdentity: "TEST.SIMULATOR",
+      chargePointSerialNumber: "000001",
       configuration: [] as KeyValue[],
       model: "test-model",
       vendor: "test-vendor",

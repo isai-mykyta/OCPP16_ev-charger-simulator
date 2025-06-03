@@ -9,6 +9,7 @@ describe("handleGetConfigurationRequest", () => {
   beforeEach(() => {
     simulator = new TestSimulator({
       chargePointIdentity: "TEST.SIMULATOR",
+      chargePointSerialNumber: "000001",
       configuration: [
         {
           key: "1",
