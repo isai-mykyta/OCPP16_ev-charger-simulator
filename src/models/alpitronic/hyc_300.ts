@@ -1,5 +1,6 @@
 import { ConnectorType } from "../../connector";
 import { Simulator, SimulatorOptions } from "../../simulator";
+import { ALPITRONIC_MODELS, VENDORS } from "../../utils";
 
 const configuration = [
   {
@@ -186,8 +187,8 @@ export class AlpitronicHyc300 extends Simulator {
       ...options,
       configuration,
       connectors,
-      model: "HYC_300",
-      vendor: "alpitronic",
+      model: ALPITRONIC_MODELS.HYC_300,
+      vendor: VENDORS.ALPITRONIC,
     });
   }
 }
