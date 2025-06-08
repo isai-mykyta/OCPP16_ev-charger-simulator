@@ -1,12 +1,11 @@
-import { Subject } from "rxjs";
-
-import { OcppRequestEvent, SimulatorOptions } from "./types";
+import { SimulatorOptions } from "./types";
 import { Connector } from "../connector";
 import { 
   CallMessage, 
   ChargePointErrorCode, 
   ChargePointStatus, 
   KeyValue, 
+  OcppDispatchService, 
   OcppMessageAction, 
   RegistrationStatus 
 } from "../ocpp";
@@ -22,15 +21,13 @@ export abstract class Simulator {
 
   private _isOnline: boolean;
   private _registrationStatus: RegistrationStatus;
-
-  private readonly _ocppRequest$ = new Subject<OcppRequestEvent>();
-  public readonly ocppRequest$ = this._ocppRequest$.asObservable();
   
   private heartbeatTimer: NodeJS.Timeout;
   private wsService: WebSocketService;
   
   private readonly pendingRequests = new Map<string, CallMessage<unknown>>();
   private readonly connectors = new Map<number, Connector>();
+  private readonly ocppDispatchService = new OcppDispatchService();
 
   constructor (options: SimulatorOptions) {
     this.webSocketUrl = options.webSocketUrl;
@@ -60,33 +57,43 @@ export abstract class Simulator {
 
   private handleRejectedRegistrationStatus(): void {
     setTimeout(() => {
-      this._ocppRequest$.next({ action: OcppMessageAction.BOOT_NOTIFICATION });
+      this.wsService.sendRequest(
+        JSON.stringify(
+          this.ocppDispatchService.bootNotificationReq({
+            chargePointModel: this.model,
+            chargePointVendor: this.vendor,
+            chargePointSerialNumber: this.chargePointSerialNumber,
+          })
+        )
+      );
     }, this.heartbeatInterval * 1000);
   }
 
   private handleAcceptedRegistrationStatus(): void {
     this.heartbeatTimer = setInterval(() => {
-      this._ocppRequest$.next({ action: OcppMessageAction.HEARTBEAT });
+      this.ocppDispatchService.hearbeatReq();
     }, this.heartbeatInterval * 1000);
 
-    this._ocppRequest$.next({ 
-      action: OcppMessageAction.STATUS_NOTIFICATION, 
-      payload: {
-        connectorId: 0,
-        status: ChargePointStatus.AVAILABLE,
-        errorCode: ChargePointErrorCode.NO_ERROR
-      }
-    });
-
-    this.connectors.forEach((connector) => {
-      this._ocppRequest$.next({ 
-        action: OcppMessageAction.STATUS_NOTIFICATION, 
-        payload: {
-          connectorId: connector.id,
+    this.wsService.sendRequest(
+      JSON.stringify(
+        this.ocppDispatchService.statusNotificationReq({
+          connectorId: 0,
           status: ChargePointStatus.AVAILABLE,
           errorCode: ChargePointErrorCode.NO_ERROR
-        }
-      });
+        })
+      )
+    );
+
+    this.connectors.forEach((connector) => {
+      this.wsService.sendRequest(
+        JSON.stringify(
+          this.ocppDispatchService.statusNotificationReq({
+            connectorId: connector.id,
+            status: ChargePointStatus.AVAILABLE,
+            errorCode: ChargePointErrorCode.NO_ERROR
+          })
+        )
+      );
     });
   }
 
@@ -102,7 +109,16 @@ export abstract class Simulator {
     });
 
     this.wsService.connect();
-    this._ocppRequest$.next({ action: OcppMessageAction.BOOT_NOTIFICATION });
+    
+    this.wsService.sendRequest(
+      JSON.stringify(
+        this.ocppDispatchService.bootNotificationReq({
+          chargePointModel: this.model,
+          chargePointVendor: this.vendor,
+          chargePointSerialNumber: this.chargePointSerialNumber,
+        })
+      )
+    );
   }
 
   public stop(): void {

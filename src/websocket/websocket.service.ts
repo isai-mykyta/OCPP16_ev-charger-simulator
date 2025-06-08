@@ -1,7 +1,7 @@
 import WebSocket from "ws";
 
 import { logger } from "../logger";
-import { OcppService, OcppMessage } from "../ocpp";
+import { OcppHandlerService, OcppMessage } from "../ocpp";
 import { WebSocketOptions } from "./types";
 import { Simulator } from "../simulator";
 
@@ -9,21 +9,13 @@ export class WebSocketService {
   private wsClient: WebSocket;
   private pingInterval: NodeJS.Timeout;
   private webSocketPingInterval: number;
-  private ocppService: OcppService;
+  private ocppHandlerService: OcppHandlerService;
   private simulator: Simulator;
 
   constructor (options: WebSocketOptions) {
     this.simulator = options.simulator;
     this.webSocketPingInterval = options.webSocketPingInterval;
-    this.ocppService = new OcppService(this.simulator);
-
-    this.ocppService.ocppRequest$.subscribe((request) => {
-      this.sendRequest(JSON.stringify(request));
-    });
-
-    this.ocppService.ocppResponse$.subscribe((response) => {
-      this.send(JSON.stringify(response));
-    });
+    this.ocppHandlerService = new OcppHandlerService(this.simulator);
   }
 
   private startPingInterval(): void {
@@ -35,7 +27,7 @@ export class WebSocketService {
   private clear(): void {
     this.wsClient = null;
     this.webSocketPingInterval = null;
-    this.ocppService = null;
+    this.ocppHandlerService = null;
     this.simulator = null;
 
     if (this.pingInterval) {
@@ -68,11 +60,6 @@ export class WebSocketService {
     this.wsClient.send(message);
   }
 
-  private sendRequest(message: string): void {
-    this.send(message);
-    this.simulator.storePendingRequest(JSON.parse(message));
-  }
-
   private onMessage(data: WebSocket.RawData): void {
     const message = data.toString();
     logger.info("WebSocket message received", { message });
@@ -85,7 +72,11 @@ export class WebSocketService {
       logger.error("Failed to parse incoming WS message");
     }
 
-    this.ocppService.handleMessage(parsedMessage);
+    const response = this.ocppHandlerService.handleMessage(parsedMessage);
+
+    if (response) {
+      this.send(JSON.stringify(response));
+    }
   }
 
   public connect(): void {
@@ -100,5 +91,10 @@ export class WebSocketService {
 
   public disconnect(): void {
     this.wsClient?.close();
+  }
+
+  public sendRequest(message: string): void {
+    this.send(message);
+    this.simulator.storePendingRequest(JSON.parse(message));
   }
 }
