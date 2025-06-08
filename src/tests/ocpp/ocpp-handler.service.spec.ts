@@ -1,23 +1,23 @@
 import { ConnectorType } from "../../connector";
 import { logger } from "../../logger";
 import { 
-  CallMessage, 
-  KeyValue, 
-  OcppErrorCode, 
-  OcppMessage, 
-  OcppMessageAction, 
-  OcppMessageType, 
-  OcppService, 
-  RegistrationStatus 
+  CallMessage,
+  KeyValue,
+  OcppErrorCode,
+  OcppMessage,
+  OcppMessageAction,
+  OcppHandlerService,
+  RegistrationStatus
 } from "../../ocpp";
 import { TestSimulator } from "../fixtures";
 
-
-describe("OCPP service", () => {
-  let ocppService: OcppService;
+describe("OCPP-handler service", () => {
+  let ocppService: OcppHandlerService;
   let simulator: TestSimulator;
 
   beforeEach(() => {
+    jest.useFakeTimers();
+    
     simulator = new TestSimulator({
       chargePointIdentity: "TEST.SIMULATOR",
       configuration: [] as KeyValue[],
@@ -37,11 +37,12 @@ describe("OCPP service", () => {
       ]
     });
 
-    ocppService = new OcppService(simulator);
+    ocppService = new OcppHandlerService(simulator);
   });
 
   afterEach(() => {
     jest.resetAllMocks();
+    jest.useRealTimers();
   });
 
   test("should not handle invalid OCPP message", () => {
@@ -66,17 +67,14 @@ describe("OCPP service", () => {
   });
 
   test("should not handle OCPP message when registration status is rejected", () => {
-    jest.useFakeTimers();
     simulator.registrationStatus = RegistrationStatus.REJECTED;
     const ocppMessage = [2, "id", OcppMessageAction.HEARTBEAT, {}] as CallMessage<object>;
     jest.spyOn(logger, "error");
     ocppService.handleMessage(ocppMessage);
     expect(logger.error).toHaveBeenCalledTimes(1);
-    jest.useRealTimers();
   });
 
   test("should not allow transaction requests while CS being rejected by Central System", () => {
-    jest.useFakeTimers();
     simulator.registrationStatus = RegistrationStatus.PENDING;
     const startTransactionReq = [2, "id", OcppMessageAction.REMOTE_START_TRANSACTION, {}] as CallMessage<object>;
     const stopTransactionReq = [2, "id", OcppMessageAction.REMOTE_STOP_TRANSACTION, {}] as CallMessage<object>;
@@ -87,44 +85,23 @@ describe("OCPP service", () => {
     ocppService.handleMessage(stopTransactionReq);
     
     expect(logger.error).toHaveBeenCalledTimes(2);
-    jest.useRealTimers();
   });
 
-  test("should return OCPP error message if OCPP request payload is invalid", (done) => {
-    jest.useFakeTimers();
-
-    const subscription = ocppService.ocppResponse$.subscribe((ocppError) => {
-      expect(ocppError[0]).toBe(4);
-      expect(ocppError[1]).toBe("id");
-      expect(ocppError.length).toBe(5);
-      done();
-    });
-
+  test("should return OCPP error message if OCPP request payload is invalid", () => {
     const invalidOcppCallMessage = [2, "id", OcppMessageAction.BOOT_NOTIFICATION, {}] as OcppMessage<unknown>;
-    ocppService.handleMessage(invalidOcppCallMessage);
+    const response = ocppService.handleMessage(invalidOcppCallMessage);
 
-    jest.useRealTimers();
-    subscription.unsubscribe();
+    expect(response[0]).toBe(4);
+    expect(response[1]).toBe("id");
+    expect(response.length).toBe(5);
   });
 
-  test("should return NOT_IMPLEMENTED exception if request action is uknown", (done) => {
-    const subscription = ocppService.ocppResponse$.subscribe((ocppError) => {
-      expect(ocppError[0]).toBe(4);
-      expect(ocppError[1]).toBe("id");
-      expect(ocppError[2]).toStrictEqual(OcppErrorCode.NOT_IMPLEMENTED);
-      done();
-    });
-
+  test("should return NOT_IMPLEMENTED exception if request action is uknown", () => {
     const callMessage = [2, "id", "UknownAction" as OcppMessageAction, {}] as OcppMessage<unknown>;
-    ocppService.handleMessage(callMessage);
-    subscription.unsubscribe();
-  });
+    const response = ocppService.handleMessage(callMessage);
 
-  test("should constrcut boot notification request", () => {
-    const request = ocppService.bootNotificationReq();
-    expect(request[0]).toBe(OcppMessageType.CALL);
-    expect(typeof request[1]).toBe("string");
-    expect(request[2]).toBe(OcppMessageAction.BOOT_NOTIFICATION);
-    expect(request[3]).toBeDefined();
+    expect(response[0]).toBe(4);
+    expect(response[1]).toBe("id");
+    expect(response[2]).toStrictEqual(OcppErrorCode.NOT_IMPLEMENTED);
   });
 });

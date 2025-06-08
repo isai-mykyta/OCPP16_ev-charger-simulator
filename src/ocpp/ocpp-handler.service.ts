@@ -1,8 +1,5 @@
-import { filter, map, Subject, tap } from "rxjs";
-
 import { 
   BootNotificationConf,
-  BootNotificationReq,
   CallErrorMessage, 
   CallMessage, 
   CallResultMessage, 
@@ -12,56 +9,26 @@ import {
   OcppMessageAction, 
   OcppMessageType,
   RegistrationStatus,
-  StatusNotificationReq
 } from "./types";
 import { logger } from "../logger";
 import { OcppValidator } from "./ocpp.validator";
 import { Simulator } from "../simulator";
-import { 
-  callErrorMessage, 
-  callMessage, 
-  callResultMessage 
-} from "../utils";
+import { callErrorMessage, callResultMessage } from "../utils";
 import { 
   handleBootNotificationResponse,
   handleChangeConfigurationRequest,
   handleGetConfigurationRequest
 } from "./handlers";
 
-export class OcppService {
+export class OcppHandlerService {
   private readonly ocppValidator = new OcppValidator();
   private readonly simulator: Simulator;
-  
-  private readonly _ocppResponse$ = new Subject<OcppMessage<unknown>>();
-  public readonly ocppResponse$ = this._ocppResponse$.asObservable();
-
-  private readonly _ocppRequest$ = new Subject<CallMessage<unknown>>();
-  public readonly ocppRequest$ = this._ocppRequest$.asObservable();
 
   constructor (simulator: Simulator) {
     this.simulator = simulator;
-
-    this.simulator.ocppRequest$.pipe(
-      map(({ action, payload }) => this.getOcppRequest(action, payload)),
-      filter((req): req is CallMessage<object> => req !== null),
-      tap((req) => this._ocppRequest$.next(req))
-    ).subscribe();   
   }
 
-  private getOcppRequest<P>(action: OcppMessageAction, payload?: P): CallMessage<unknown> {
-    switch (action) {
-    case OcppMessageAction.BOOT_NOTIFICATION:
-      return this.bootNotificationReq();
-    case OcppMessageAction.HEARTBEAT:
-      return this.hearbeatReq();
-    case OcppMessageAction.STATUS_NOTIFICATION:
-      return this.statusNotificationReq(payload as StatusNotificationReq);
-    default:
-      return null;
-    }
-  }
-
-  private handleCallMessage(message: CallMessage<unknown>): CallResultMessage<unknown> | CallErrorMessage | undefined {
+  private handleCallMessage(message: CallMessage<unknown>): CallResultMessage<unknown> | CallErrorMessage {
     const isValidCallMessage = this.ocppValidator.validateOcppCallMessage(message);
 
     if (!isValidCallMessage) {
@@ -82,26 +49,22 @@ export class OcppService {
     if (!isValid) {
       const errorMessage = callErrorMessage(messageId, errorCode);
       logger.error("Error during validation of OCPP call message payload", { errorMessage });
-      this._ocppResponse$.next(errorMessage);
-      return;
+      return errorMessage;
     }
 
     switch (action) {
     case OcppMessageAction.GET_CONFIGURATION: {
       const responsePayload = handleGetConfigurationRequest(this.simulator, payload);
-      this._ocppResponse$.next(callResultMessage(messageId, responsePayload));
-      return;
+      return callResultMessage(messageId, responsePayload);
     }
     case OcppMessageAction.CHANGE_CONFIGURATION: {
       const responsePayload = handleChangeConfigurationRequest(this.simulator, payload as ChangeConfigurationReq);
-      this._ocppResponse$.next(callResultMessage(messageId, responsePayload));
-      return;
+      return callResultMessage(messageId, responsePayload);
     }
     default:
       const errorMessage = callErrorMessage(messageId, OcppErrorCode.NOT_IMPLEMENTED);
-      this._ocppResponse$.next(errorMessage);
       logger.error("Not supported OCPP message ", { message });
-      return;
+      return errorMessage;
     }
   }
 
@@ -140,7 +103,7 @@ export class OcppService {
     logger.error("Call error message received", { message });
   }
 
-  public handleMessage(message: OcppMessage<unknown>): void {
+  public handleMessage(message: OcppMessage<unknown>): CallResultMessage<unknown> | CallErrorMessage | undefined {
     const [messageType] = message;
     const isValidOcppMessage = Array.isArray(message) && [2, 3, 4].includes(messageType);
 
@@ -156,8 +119,7 @@ export class OcppService {
 
     switch (messageType) {
     case OcppMessageType.CALL:
-      this.handleCallMessage(message);
-      break;
+      return this.handleCallMessage(message);
     case OcppMessageType.RESULT:
       this.handleCallResultMessage(message);
       break;
@@ -167,36 +129,5 @@ export class OcppService {
     default:
       break;
     }
-  }
-
-  public hearbeatReq(): CallMessage<object> {
-    return callMessage(OcppMessageAction.HEARTBEAT, {});
-  }
-
-  public statusNotificationReq(payload: StatusNotificationReq): CallMessage<StatusNotificationReq> {
-    return callMessage(OcppMessageAction.STATUS_NOTIFICATION, payload);
-  }
-
-  public bootNotificationReq(): CallMessage<BootNotificationReq> {
-    const imsi = this.simulator.configuration.find((v) => v.key === "Imsi");
-    const iccid = this.simulator.configuration.find((v) => v.key === "Iccid");
-    const meterType = this.simulator.configuration.find((v) => v.key === "MeterType");
-    const firmwareVersion = this.simulator.configuration.find((v) => v.key === "FirmwareVersion");
-    const meterSerialNumber = this.simulator.configuration.find((v) => v.key === "MeterSerialNumber");
-    const chargeBoxSerialNumber = this.simulator.configuration.find((v) => v.key === "ChargeBoxSerialNumber");
-
-    const payload: BootNotificationReq = {
-      chargePointModel: this.simulator.model,
-      chargePointVendor: this.simulator.vendor,
-      chargePointSerialNumber: this.simulator.chargePointSerialNumber,
-      ...(imsi && { imsi: imsi.value }),
-      ...(iccid && { iccid: iccid.value }),
-      ...(meterType && { meterType: meterType.value }),
-      ...(firmwareVersion && { firmwareVersion: firmwareVersion.value }),
-      ...(meterSerialNumber && { meterSerialNumber: meterSerialNumber.value }),
-      ...(chargeBoxSerialNumber && { chargeBoxSerialNumber: chargeBoxSerialNumber.value }),
-    };
-
-    return callMessage(OcppMessageAction.BOOT_NOTIFICATION, payload);
   }
 }
