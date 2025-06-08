@@ -1,5 +1,5 @@
 import { Simulator } from "../../simulator";
-import { isBoolString, isPositiveIntegerString } from "../../utils/validators";
+import { isBoolString, isPositiveIntegerString } from "../../utils";
 import { ChangeConfigurationConf, ChangeConfigurationReq, ConfigurationStatus } from "../types";
 
 const validators: Record<string, (v: string) => boolean> = {

@@ -31,7 +31,7 @@ export abstract class Simulator {
 
   constructor (options: SimulatorOptions) {
     this.webSocketUrl = options.webSocketUrl;
-    this.identity = options.chargePointIdentity;
+    this.identity = options.chargePointIdentity.toLocaleUpperCase();
     this.model = options.model;
     this.vendor = options.vendor;
     this.configuration = options.configuration;
