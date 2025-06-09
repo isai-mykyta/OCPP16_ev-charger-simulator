@@ -13,6 +13,10 @@ export enum OcppMessageAction {
   REMOTE_STOP_TRANSACTION = "RemoteStopTransaction",
   REMOTE_START_TRANSACTION = "RemoteStartTransaction",
   STATUS_NOTIFICATION = "StatusNotification",
+  START_TRANSACTION = "StartTransaction",
+  STOP_TRANSACTION = "StopTransaction",
+  METER_VALUES = "METER_VALUES",
+  AUTHORIZE = "AUTHORIZE",
 }
 
 export enum OcppErrorCode {
@@ -72,6 +76,14 @@ export enum ChargePointErrorCode {
   WEAK_SIGNAL = "WeakSignal"
 }
 
+export enum AuthorizationStatus {
+  ACCEPTED = "Accepted",
+  BLOCKED = "Blocked",
+  EXPIRED = "Expired",
+  INVALID = "Invalid",
+  CONCURENT_TX = "ConcurrentTx",
+}
+
 export type CallMessage<P> = [OcppMessageType.CALL, string, OcppMessageAction, P];
 export type CallResultMessage<P> = [OcppMessageType.RESULT, string, P];
 export type CallErrorMessage = [OcppMessageType.ERROR, string, OcppErrorCode, string, string];
@@ -127,4 +139,18 @@ export type StatusNotificationReq = {
   timestamp?: string;
   vendorId?: string;
   vendorErrorCode?: string;
+}
+
+export type AuthorizeReq = {
+  idTag: string;
+}
+
+export type IdTagInfo = {
+  expiryDate?: string;
+  parentIdTag?: string;
+  status: AuthorizationStatus;
+}
+
+export type AuthorizeConf = {
+  idTagInfo: IdTagInfo;
 }

@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 
 import { CHARGERS, validateDto } from "../utils";
-import { ConnectSimulatorRequestDto } from "./api.dtos";
+import { ConnectSimulatorRequestDto, StartTransactionRequestDto } from "./api.dtos";
 
 export const connectMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   const { isValid, errors} = validateDto(req.body, ConnectSimulatorRequestDto);
@@ -24,6 +24,17 @@ export const connectMiddleware = (req: Request, res: Response, next: NextFunctio
 
   if (!isValidModel) {
     res.status(400).send({ message: "Invalid model." });
+    return;
+  }
+
+  next();
+};
+
+export const startTransactionMiddleware = (req: Request, res: Response, next: NextFunction): void => {
+  const { isValid, errors} = validateDto(req.body, StartTransactionRequestDto);
+
+  if (!isValid) {
+    res.status(400).send(errors);
     return;
   }
 

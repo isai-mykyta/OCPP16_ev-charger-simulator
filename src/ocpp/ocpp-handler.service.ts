@@ -1,4 +1,5 @@
 import { 
+  AuthorizeConf,
   BootNotificationConf,
   CallErrorMessage, 
   CallMessage, 
@@ -17,7 +18,8 @@ import { callErrorMessage, callResultMessage } from "../utils";
 import { 
   handleBootNotificationResponse,
   handleChangeConfigurationRequest,
-  handleGetConfigurationRequest
+  handleGetConfigurationRequest,
+  handleAuthorizeResponse
 } from "./handlers";
 
 export class OcppHandlerService {
@@ -93,6 +95,9 @@ export class OcppHandlerService {
     case OcppMessageAction.HEARTBEAT:
       break;
     case OcppMessageAction.STATUS_NOTIFICATION:
+      break;
+    case OcppMessageAction.AUTHORIZE:
+      handleAuthorizeResponse(this.simulator, payload as AuthorizeConf);
       break;
     default:
       break;

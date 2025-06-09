@@ -84,10 +84,11 @@ describe("API controller", () => {
     test("should disconnect simulator", () => {
       const stop = jest.fn();
 
-      controller["simulator"] = { stop } as unknown as Simulator;
+      controller["simulator"] = { stop, isOnline: true, } as unknown as Simulator;
       controller.disconnectSimualtor(req, res);
 
       expect(stop).toHaveBeenCalled();
+      expect(controller["simulator"]).toBe(null);
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.send).toHaveBeenCalledWith({ status: "Disconnected" });
     });

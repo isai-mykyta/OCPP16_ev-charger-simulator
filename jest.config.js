@@ -8,6 +8,7 @@ module.exports = {
   collectCoverageFrom: [
     "**/*.(t|j)s"
   ],
+  setupFiles: ['reflect-metadata'],
   coverageDirectory: "../coverage",
   testTimeout: 30000,
   maxWorkers: 1,

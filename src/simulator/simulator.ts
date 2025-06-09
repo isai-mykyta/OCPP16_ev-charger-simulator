@@ -1,6 +1,7 @@
 import { SimulatorOptions } from "./types";
 import { Connector } from "../connector";
 import { 
+  AuthorizeReq,
   CallMessage, 
   ChargePointErrorCode, 
   ChargePointStatus, 
@@ -186,5 +187,14 @@ export abstract class Simulator {
   public set webSocketPingInterval(value: number) {
     if (value < 10) return;
     this.setConfigKey("WebSocketPingInterval", value.toString(), false);
+  }
+
+  public authorize(payload: AuthorizeReq): void {
+    this.sendRequest(this.ocppDispatchService.authorizeReq(payload));
+  }
+
+  public getConnectorStatus(id: number): ChargePointStatus {
+    const connector = this.connectors.get(id);
+    return connector?.status;
   }
 }
