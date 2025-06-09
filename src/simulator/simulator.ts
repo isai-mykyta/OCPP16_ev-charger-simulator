@@ -6,7 +6,6 @@ import {
   ChargePointStatus, 
   KeyValue, 
   OcppDispatchService, 
-  OcppMessageAction, 
   RegistrationStatus 
 } from "../ocpp";
 import { WebSocketService } from "../websocket/websocket.service";
@@ -41,6 +40,10 @@ export abstract class Simulator {
     this.initConnectors(options.connectors);
   }
 
+  private sendRequest(request: CallMessage<unknown>): void {
+    this.wsService.sendRequest(JSON.stringify(request));
+  }
+
   private initConnector(connector: Connector): void {
     this.connectors.set(connector.id, connector);
   }
@@ -57,42 +60,36 @@ export abstract class Simulator {
 
   private handleRejectedRegistrationStatus(): void {
     setTimeout(() => {
-      this.wsService.sendRequest(
-        JSON.stringify(
-          this.ocppDispatchService.bootNotificationReq({
-            chargePointModel: this.model,
-            chargePointVendor: this.vendor,
-            chargePointSerialNumber: this.chargePointSerialNumber,
-          })
-        )
+      this.sendRequest(
+        this.ocppDispatchService.bootNotificationReq({
+          chargePointModel: this.model,
+          chargePointVendor: this.vendor,
+          chargePointSerialNumber: this.chargePointSerialNumber,
+        })
       );
     }, this.heartbeatInterval * 1000);
   }
 
   private handleAcceptedRegistrationStatus(): void {
     this.heartbeatTimer = setInterval(() => {
-      this.ocppDispatchService.hearbeatReq();
+      this.sendRequest(this.ocppDispatchService.hearbeatReq());
     }, this.heartbeatInterval * 1000);
 
-    this.wsService.sendRequest(
-      JSON.stringify(
-        this.ocppDispatchService.statusNotificationReq({
-          connectorId: 0,
-          status: ChargePointStatus.AVAILABLE,
-          errorCode: ChargePointErrorCode.NO_ERROR
-        })
-      )
+    this.sendRequest(
+      this.ocppDispatchService.statusNotificationReq({
+        connectorId: 0,
+        status: ChargePointStatus.AVAILABLE,
+        errorCode: ChargePointErrorCode.NO_ERROR
+      })
     );
 
     this.connectors.forEach((connector) => {
-      this.wsService.sendRequest(
-        JSON.stringify(
-          this.ocppDispatchService.statusNotificationReq({
-            connectorId: connector.id,
-            status: ChargePointStatus.AVAILABLE,
-            errorCode: ChargePointErrorCode.NO_ERROR
-          })
-        )
+      this.sendRequest(
+        this.ocppDispatchService.statusNotificationReq({
+          connectorId: connector.id,
+          status: ChargePointStatus.AVAILABLE,
+          errorCode: ChargePointErrorCode.NO_ERROR
+        })
       );
     });
   }
@@ -102,22 +99,20 @@ export abstract class Simulator {
     configKey ? configKey.value = value : this.configuration.push({ key, readonly, value });
   }
 
-  public start(): void {
+  public async start(): Promise<void> {
     this.wsService = new WebSocketService({
       simulator: this,
       webSocketPingInterval: this.webSocketPingInterval,
     });
 
-    this.wsService.connect();
-    
-    this.wsService.sendRequest(
-      JSON.stringify(
-        this.ocppDispatchService.bootNotificationReq({
-          chargePointModel: this.model,
-          chargePointVendor: this.vendor,
-          chargePointSerialNumber: this.chargePointSerialNumber,
-        })
-      )
+    await this.wsService.connect();
+
+    this.sendRequest(
+      this.ocppDispatchService.bootNotificationReq({
+        chargePointModel: this.model,
+        chargePointVendor: this.vendor,
+        chargePointSerialNumber: this.chargePointSerialNumber,
+      })
     );
   }
 
