@@ -1,10 +1,11 @@
-import { IsNotEmpty, IsString } from "class-validator";
+import { IsNotEmpty, IsString, Length } from "class-validator";
 
 import { IsWebSocketUrl } from "../utils";
 
 export class ConnectSimulatorRequestDto {
   @IsString()
   @IsNotEmpty()
+  @Length(5, 20)
   public chargePointIdentity: string;
 
   @IsString()
@@ -14,6 +15,7 @@ export class ConnectSimulatorRequestDto {
 
   @IsString()
   @IsNotEmpty()
+  @Length(3, 50)
   public chargePointSerialNumber: string;
 
   @IsString()
@@ -24,5 +26,3 @@ export class ConnectSimulatorRequestDto {
   @IsNotEmpty()
   public model: string;
 }
-
-export class DisonncetSimulatorRequestDto {}

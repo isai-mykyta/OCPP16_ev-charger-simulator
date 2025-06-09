@@ -4,7 +4,7 @@ import { CHARGERS, validateDto } from "../utils";
 import { ConnectSimulatorRequestDto } from "./api.dtos";
 
 export const connectMiddleware = (req: Request, res: Response, next: NextFunction): void => {
-  const { isValid, errors} = validateDto(ConnectSimulatorRequestDto, req.body);
+  const { isValid, errors} = validateDto(req.body, ConnectSimulatorRequestDto);
 
   if (!isValid) {
     res.status(400).send(errors);
@@ -16,14 +16,14 @@ export const connectMiddleware = (req: Request, res: Response, next: NextFunctio
   );
 
   if (!charger) {
-    res.status(400).send({ message: "Invalid vendor" });
+    res.status(400).send({ message: "Invalid vendor." });
     return;
   }
 
   const isValidModel = charger.models.includes(req.body.model.toLocaleLowerCase());
 
   if (!isValidModel) {
-    res.status(400).send({ message: "Invalid model" });
+    res.status(400).send({ message: "Invalid model." });
     return;
   }
 

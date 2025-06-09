@@ -79,14 +79,28 @@ export class WebSocketService {
     }
   }
 
-  public connect(): void {
-    this.wsClient = new WebSocket(`${this.simulator.webSocketUrl}/${this.simulator.identity}`, "ocpp1.6");
+  public async connect(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      this.wsClient = new WebSocket(`${this.simulator.webSocketUrl}/${this.simulator.identity}`, "ocpp1.6");
 
-    this.wsClient.on("open", this.onOpen.bind(this));
-    this.wsClient.on("ping", this.onPing.bind(this));
-    this.wsClient.on("close", this.onClose.bind(this));
-    this.wsClient.on("error", this.onError.bind(this));
-    this.wsClient.on("message", this.onMessage.bind(this));
+      this.wsClient.on("ping", this.onPing.bind(this));
+      this.wsClient.on("message", this.onMessage.bind(this));
+
+      this.wsClient.on("open", () => {
+        this.onOpen();
+        resolve();
+      });
+
+      this.wsClient.on("close", () => {
+        this.onClose();
+        reject(new Error("WebSocket connection closed"));
+      });
+
+      this.wsClient.on("error", (error) => {
+        this.onError(error);
+        reject(error);
+      });
+    });
   }
 
   public disconnect(): void {
