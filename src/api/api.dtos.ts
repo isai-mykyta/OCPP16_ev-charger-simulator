@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, Length } from "class-validator";
+import { IsInt, IsNotEmpty, IsString, Length, Min } from "class-validator";
 
 import { IsWebSocketUrl } from "../utils";
 
@@ -25,4 +25,15 @@ export class ConnectSimulatorRequestDto {
   @IsString()
   @IsNotEmpty()
   public model: string;
+}
+
+export class StartTransactionRequestDto {
+  @IsNotEmpty()
+  @IsInt()
+  @Min(1)
+  public connectorId: number;
+
+  @IsNotEmpty()
+  @IsString()
+  public idTag: string;
 }

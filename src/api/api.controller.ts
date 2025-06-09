@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 
 import { AlpitronicHyc300 } from "../models";
+import { ChargePointStatus } from "../ocpp";
 import { Simulator } from "../simulator";
 import { ALPITRONIC_MODELS, CHARGERS, VENDORS } from "../utils";
 
@@ -37,12 +38,29 @@ export class ApiController {
   }
 
   public disconnectSimualtor(_: Request, res: Response): void {
-    if (!this.simulator) {
+    if (!this.simulator || !this.simulator.isOnline) {
       res.status(400).send({ message: "Simulator is not connected" });
       return;
     }
 
     this.simulator.stop();
+    this.simulator = null;
     res.status(200).send({ status: "Disconnected" });
+  }
+
+  public startTransaction(req: Request, res: Response): void {
+    if (!this.simulator || !this.simulator.isOnline) {
+      res.status(400).send({ message: "Simulator is not connected." });
+      return;
+    }
+
+    const connectorStatus = this.simulator.getConnectorStatus(req.body.connectorId);
+
+    if (connectorStatus !== ChargePointStatus.AVAILABLE) {
+      res.status(400).send({ message: "Connector is not available." });
+      return;
+    }
+
+    res.status(200).send({});
   }
 }

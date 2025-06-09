@@ -1,5 +1,6 @@
 import { callMessage } from "../utils";
 import { 
+  AuthorizeReq,
   BootNotificationReq,
   CallMessage, 
   OcppMessageAction, 
@@ -17,5 +18,9 @@ export class OcppDispatchService {
 
   public bootNotificationReq(payload: BootNotificationReq): CallMessage<BootNotificationReq> {
     return callMessage(OcppMessageAction.BOOT_NOTIFICATION, payload);
+  }
+
+  public authorizeReq(payload: AuthorizeReq): CallMessage<AuthorizeReq> {
+    return callMessage(OcppMessageAction.AUTHORIZE, payload);
   }
 }
