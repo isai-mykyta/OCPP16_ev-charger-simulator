@@ -24,15 +24,19 @@ describe("API controller", () => {
   });
 
   describe("Connect simulator", () => {
-    const req = {
-      body: {
-        vendor: "alpitronic",
-        model: "HYC_300",
-        chargePointIdentity: "TEST.IDENTITY",
-        webSocketUrl: "ws://127.0.0.1:8080",
-        chargePointSerialNumber: "TESTSN0001",
-      }
-    } as Request;
+    let req: Request;
+
+    beforeEach(() => {
+      req = {
+        body: {
+          vendor: "alpitronic",
+          model: "HYC_300",
+          chargePointIdentity: "TEST.IDENTITY",
+          webSocketUrl: "ws://127.0.0.1:8080",
+          chargePointSerialNumber: "TESTSN0001",
+        }
+      } as Request;
+    });
 
     test("should connect alpitronic HYC_300", async () => {
       await controller.connectSimulator(req, res);
@@ -55,6 +59,22 @@ describe("API controller", () => {
 
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.send).toHaveBeenCalledWith({ message: "Simulator is already connected" });
+    });
+
+    test("should return 400 if vendor is invalid", async () => {
+      req.body.vendor = "invalid-vendor";
+      await controller.connectSimulator(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith({ message: "Invalid vendor." });
+    });
+
+    test("should return 400 if model is invalid", async () => {
+      req.body.model = "invalid-model";
+      await controller.connectSimulator(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalledWith({ message: "Invalid model." });
     });
   });
 

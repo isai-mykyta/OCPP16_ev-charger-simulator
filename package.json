@@ -6,7 +6,8 @@
   "scripts": {
     "lint": "eslint . --ext .ts",
     "start": "ts-node src/index.ts",
-    "test": "jest --verbose"
+    "test": "jest --verbose",
+    "test:coverage": "jest --coverage --verbose"
   },
   "devDependencies": {
     "@mykyta-isai/eslint-config": "^1.0.3",
