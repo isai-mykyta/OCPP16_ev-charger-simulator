@@ -189,7 +189,7 @@ export abstract class Simulator {
     this.setConfigKey("WebSocketPingInterval", value.toString(), false);
   }
 
-  public authorize(payload: AuthorizeReq): void {
+  public initAuthorization(payload: AuthorizeReq): void {
     this.sendRequest(this.ocppDispatchService.authorizeReq(payload));
   }
 

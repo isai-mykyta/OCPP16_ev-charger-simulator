@@ -5,62 +5,64 @@ import { ChargePointStatus } from "../ocpp";
 import { Simulator } from "../simulator";
 import { ALPITRONIC_MODELS, CHARGERS, VENDORS } from "../utils";
 
-export class ApiController {
-  private simulator: Simulator;
+let simulator: Simulator;
 
-  public async connectSimulator(req: Request, res: Response): Promise<void> {
-    if (!!this.simulator) {
-      res.status(400).send({ message: "Simulator is already connected" });
-      return;
-    }
-
-    if (req.body.vendor.toLocaleLowerCase() === VENDORS.ALPITRONIC) {
-      const connectModel = CHARGERS.ALPITRONIC.models.find((m) => m.toLocaleLowerCase() === req.body.model.toLocaleLowerCase());
-
-      switch (connectModel) {
-      case ALPITRONIC_MODELS.HYC_300:
-        this.simulator = new AlpitronicHyc300({
-          chargePointIdentity: req.body.chargePointIdentity,
-          webSocketUrl: req.body.webSocketUrl,
-          chargePointSerialNumber: req.body.chargePointSerialNumber,
-        });
-
-        await this.simulator.start();
-        res.status(200).send({ status: "Connected" });
-        return;
-      default:
-        res.status(400).send({ message: "Invalid model." });
-        return;
-      }
-    }
-
-    res.status(400).send({ message: "Invalid vendor." });
+export const connectSimulator = async (req: Request, res: Response): Promise<void> => {
+  if (!!simulator) {
+    res.status(400).send({ message: "Simulator is already connected" });
+    return;
   }
 
-  public disconnectSimualtor(_: Request, res: Response): void {
-    if (!this.simulator || !this.simulator.isOnline) {
-      res.status(400).send({ message: "Simulator is not connected" });
+  const { vendor, chargePointIdentity, webSocketUrl, chargePointSerialNumber, model } = req.body;
+
+  if (vendor.toLocaleLowerCase() === VENDORS.ALPITRONIC.toLocaleLowerCase()) {
+    const connectModel = CHARGERS.ALPITRONIC.models.find(
+      (m) => m.toLocaleLowerCase() === model.toLocaleLowerCase()
+    );
+
+    switch (connectModel) {
+    case ALPITRONIC_MODELS.HYC_300:
+      simulator = new AlpitronicHyc300({
+        chargePointIdentity,
+        webSocketUrl,
+        chargePointSerialNumber,
+      });
+
+      await simulator.start();
+      res.status(200).send({ status: "Connected" });
+      return;
+    default:
+      res.status(400).send({ message: "Invalid model." });
       return;
     }
-
-    this.simulator.stop();
-    this.simulator = null;
-    res.status(200).send({ status: "Disconnected" });
   }
 
-  public startTransaction(req: Request, res: Response): void {
-    if (!this.simulator || !this.simulator.isOnline) {
-      res.status(400).send({ message: "Simulator is not connected." });
-      return;
-    }
+  res.status(400).send({ message: "Invalid vendor." });
+};
 
-    const connectorStatus = this.simulator.getConnectorStatus(req.body.connectorId);
-
-    if (connectorStatus !== ChargePointStatus.AVAILABLE) {
-      res.status(400).send({ message: "Connector is not available." });
-      return;
-    }
-
-    res.status(200).send({});
+export const disconnectSimualtor = (_: Request, res: Response): void => {
+  if (!simulator || !simulator.isOnline) {
+    res.status(400).send({ message: "Simulator is not connected" });
+    return;
   }
-}
+
+  simulator.stop();
+  simulator = null;
+  res.status(200).send({ status: "Disconnected" });
+};
+
+export const runTransaction = (req: Request, res: Response): void => {
+  if (!simulator || !simulator.isOnline) {
+    res.status(400).send({ message: "Simulator is not connected." });
+    return;
+  }
+
+  const connectorStatus = simulator.getConnectorStatus(req.body.connectorId);
+
+  if (connectorStatus !== ChargePointStatus.AVAILABLE) {
+    res.status(400).send({ message: "Connector is not available." });
+    return;
+  }
+
+  res.status(200).send();
+};
