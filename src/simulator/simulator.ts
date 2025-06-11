@@ -1,8 +1,11 @@
+import { Subject } from "rxjs";
+
 import { SimulatorOptions } from "./types";
 import { Connector } from "../connector";
 import { 
   AuthorizeReq,
   CallMessage, 
+  CallResultMessage, 
   ChargePointErrorCode, 
   ChargePointStatus, 
   KeyValue, 
@@ -18,6 +21,8 @@ export abstract class Simulator {
   public readonly vendor: string;
   public readonly configuration: KeyValue[];
   public readonly chargePointSerialNumber: string;
+
+  public readonly ocppResponse$ = new Subject<CallResultMessage<unknown>>();
 
   private _isOnline: boolean;
   private _registrationStatus: RegistrationStatus;
@@ -189,8 +194,10 @@ export abstract class Simulator {
     this.setConfigKey("WebSocketPingInterval", value.toString(), false);
   }
 
-  public initAuthorization(payload: AuthorizeReq): void {
-    this.sendRequest(this.ocppDispatchService.authorizeReq(payload));
+  public initAuthorization(payload: AuthorizeReq): CallMessage<AuthorizeReq> {
+    const request = this.ocppDispatchService.authorizeReq(payload);
+    this.sendRequest(request);
+    return request;
   }
 
   public getConnectorStatus(id: number): ChargePointStatus {
