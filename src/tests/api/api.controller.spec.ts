@@ -13,7 +13,7 @@ jest.mock("../../models", () => ({
 
 const res = {
   status: jest.fn().mockReturnThis(),
-  send: jest.fn(),
+  json: jest.fn(),
 } as unknown as Response;
 
 describe("API controller", () => {
@@ -50,7 +50,7 @@ describe("API controller", () => {
       const instance = (AlpitronicHyc300 as jest.Mock).mock.results[0].value;
       expect(instance.start).toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.send).toHaveBeenCalledWith({ status: "Connected" });
+      expect(res.json).toHaveBeenCalledWith({ status: "Connected" });
     });
 
     test("should return 400 if simulator is already connected", async () => {
@@ -58,7 +58,7 @@ describe("API controller", () => {
       await controller.connectSimulator(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith({ message: "Simulator is already connected" });
+      expect(res.json).toHaveBeenCalledWith({ message: "Simulator is already connected" });
     });
 
     test("should return 400 if vendor is invalid", async () => {
@@ -66,7 +66,7 @@ describe("API controller", () => {
       await controller.connectSimulator(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith({ message: "Invalid vendor." });
+      expect(res.json).toHaveBeenCalledWith({ message: "Invalid vendor." });
     });
 
     test("should return 400 if model is invalid", async () => {
@@ -74,7 +74,7 @@ describe("API controller", () => {
       await controller.connectSimulator(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith({ message: "Invalid model." });
+      expect(res.json).toHaveBeenCalledWith({ message: "Invalid model." });
     });
   });
 
@@ -90,13 +90,13 @@ describe("API controller", () => {
       expect(stop).toHaveBeenCalled();
       expect(controller["simulator"]).toBe(null);
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.send).toHaveBeenCalledWith({ status: "Disconnected" });
+      expect(res.json).toHaveBeenCalledWith({ status: "Disconnected" });
     });
 
     test("should retrun 400 if simulator is not connected", () => {
       controller.disconnectSimualtor(req, res);
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.send).toHaveBeenCalledWith({ message: "Simulator is not connected" });
+      expect(res.json).toHaveBeenCalledWith({ message: "Simulator is not connected" });
     });
   });
 });
