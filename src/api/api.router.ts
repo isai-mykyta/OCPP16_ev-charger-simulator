@@ -1,12 +1,13 @@
 import { Router } from "express";
 
-import { connectSimulator, disconnectSimualtor, runTransaction } from "./api.controller";
+import { ApiController } from "./api.controller";
 import { connectMiddleware, startTransactionMiddleware } from "./api.middleware";
 
+const apiController = new ApiController();
 const apiRouter = Router();
 
-apiRouter.post("/connect", connectMiddleware, connectSimulator);
-apiRouter.post("/disconnect", disconnectSimualtor);
-apiRouter.post("/run-transaction", startTransactionMiddleware, runTransaction);
+apiRouter.post("/connect", connectMiddleware, apiController.connectSimulator);
+apiRouter.post("/disconnect", apiController.disconnectSimualtor);
+apiRouter.post("/run-transaction", startTransactionMiddleware, apiController.runTransaction);
 
 export { apiRouter };
