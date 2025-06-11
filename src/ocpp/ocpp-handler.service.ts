@@ -102,6 +102,8 @@ export class OcppHandlerService {
     default:
       break;
     }
+
+    this.simulator.ocppResponse$.next(message);
   }
 
   private handleCallErrorMessage(message: CallErrorMessage): void {
@@ -116,6 +118,8 @@ export class OcppHandlerService {
       logger.error("Invalid OCPP message received", { message });
       return;
     }
+
+    logger.info("OCPP message received", { message });
 
     if (this.simulator.registrationStatus === RegistrationStatus.REJECTED) {
       logger.error("While Rejected, the Charge Point SHALL NOT respond to any Central System initiated message");
